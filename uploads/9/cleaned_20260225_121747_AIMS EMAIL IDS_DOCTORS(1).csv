@@ -1,0 +1,75 @@
+department,name,email_id,alternate_email_id,__dup_combined__,__dup_phone__,__dup_email__
+Column_1,Column_2,column_3,Column_4,False,False,False
+                                                                                  Email Address at AIIMS,,,,False,False,False
+Department,Name,aiims email-id,Alternate Email-Id,False,False,True
+Acting Director  ,Dr. T.D. Dogra,director@aiims.ac.in,,False,False,False
+Dean - Academics ,Dr. R.C. Deka,dean@aiims.ac.in,,False,False,False
+Dean - Examinations,Dr. T.D. Dogra,tddogra@aiims.ac.in,,False,False,True
+Medical Superintendent,Dr. D.K. Sharma,dksharma@aiims.ac.in,,False,False,True
+Dy. Dir. Administration,Mr. Shailesh Kumar Yadav,,,False,False,False
+Dy. Dir. Computer Facility,Dr. R.S. Tyagi,rstyagi@aiims.ac.in,,False,False,False
+Prof-Incharge Examinations,Dr. K.K. Deepak,kkdeepak@aiims.ac.in,,False,False,False
+Sub-Dean Academics,Dr. S. Chumber ,schumber@aiims.ac.in,,False,False,False
+Sub-Dean Academics & PG-Cell & Surg. Discipline Resident Trg. Programe ,Dr. Sandeep Guleria,,,False,False,False
+Sub-Dean Examinations,Dr. A.K. Dinda,akdinda@aiims.ac.in,,False,False,False
+Registrar,Dr. L.R. Murmu,reg@aiims.ac.in,,False,False,False
+Controller of Examinations,,coe@aiims.ac.in,,False,False,False
+Email Directory  Head of the Departments and Chief of Centers,,,,False,False,False
+Name,Department,aiims email-id,  Alternate Email-Id,False,False,True
+Dr. Chandralekha,Anaesthesiology,clekha@aiims.ac.in,,False,False,False
+Dr. Rani Kumar,Anatomy,kumrani@aiims.ac.in,,False,False,False
+Dr. Subrata Sinha,Biochemistry,ssinha@aiims.ac.in,,False,False,False
+Dr. Alok Ray,Biomedical Engg.,alokray@aiims.ac.in,,False,False,False
+Dr. K. Dalal (Assoc. Prof.),Biophysics,,,False,False,False
+Dr. R.M. Pandey,Biostatistics,rmpandey@aiims.ac.in,rmpandey@yahoo.com ,False,False,False
+Dr. Y.D. Sharma,Biotechnology,ydsharma@aiims.ac.in,,False,False,False
+Dr. K. Chaterjee (Asstt. Prof.),Blood Bank (Transfusion Medicine),,,False,False,False
+Ms. Manju Vatsa,College of Nursing,mvatsa@aiims.ac.in,,False,False,False
+Dr. C.S. Pandav,CCM,cspandav@aiims.ac.in,,False,False,False
+Dr. A. Sampat Kumar,Cardio-Thoracis Centre (Chief & HOD) CTVS,askumar@aiims.ac.in,,False,False,False
+Dr. V.K.Bahl,Cardiology,,vkbhal2002@yahoo.com ,False,False,False
+Dr. Usha Kiran,Cardiac Anesthesiology,nsaxena@aiims.ac.in,,False,False,False
+Dr. Sanjeev Sharma,Cardiac-Radiology,sharma@aiims.ac.in,,False,False,False
+Dr. Naseem Shah,Dental Surgery (CDER),nshah@aiims.ac.in,,False,False,False
+Dr. V.K. Sharma,Dermatology,vksharma@aiims.ac.in,,False,False,False
+Dr. A.C. Ammini,Endocrinology,ammini@aiims.ac.in,,False,False,False
+Dr. R.C. Deka,ENT,rcdeka@aiims.ac.in,rcdeka@aiims.ac.in,False,False,False
+Dr. T.D. Dogra,Forensic Medicine,tddogra@aiims.ac.in,,False,False,True
+Dr. S.K. Acharya,Gastroenterology,acharya@aiims.ac.in,,False,False,False
+Dr. T.K. Chattopadhyaya,G.I. Surgery,tkc@aiims.ac.in,,False,False,False
+Dr. Renu Saksena,Haematology,,renusax@hotmail.com,False,False,False
+Dr. N.K. Mehra,HLA,nkmehra@aiims.ac.in,narin98@hotmail.com,False,False,False
+Dr. D.K. Sharma,Hospital Administration,dksharma@aiims.ac.in,,False,False,True
+Dr. G.K. Rath (Chief),BRA-IRCH (Chief),gkrath@aiims.ac.in,gkrath@hotmail.com,False,False,False
+Dr. N.K. Shukla,BRA-IRCH (Surgical Oncology),nshukla@aiims.ac.in,,False,False,False
+Dr. Vinod Raina,BRA-IRCH (Medical Oncology) ,,,False,False,False
+Dr. Rajive Kumar,BRA-IRCH (Lab. Oncology,,,False,False,False
+Dr. Sanjay P Thulkar (Assoc. Prof.),BRA-IRCH (Radiodiagnosis),,,False,False,False
+Dr. Sidhartha Satpathy (Addl. Prof.),BRA-IRCH (Hosp. Admn.),,,False,False,False
+Dr. Sushma Bhatnagar (Assoc. Prof.),BRA-IRCH (Anaesthesiology),,,False,False,False
+Dr. Pratik Kumar (Asstt. Prof.),BRA-IRCH (Medical Physics),,,False,False,False
+Dr. Sameer Bakshi (Assoc. Prof.),BRA-IRCH (Paed. Oncology),,,False,False,False
+Dr. A.K. Mukhopadhyaya,Laboratory Medicine,mukhoak@aiims.ac.in,,False,False,False
+Dr. J.C. Samantaray,Microbiology,jcsray@aiims.ac.in,,False,False,False
+Dr. S.K. Sharma,Medicine,sksharma@aiims.ac.in,,False,False,False
+Dr. H.H. Dash (Chief NSC & HOD),"Neuro Science Centre, Neuro Anaesthesia",hhdash@aiims.ac.in,,False,False,False
+Dr. B.S. Sharma,Neurosurgery,,,False,False,False
+Dr. M. Behari,Neurology,mbehari@aiims.ac.in,,False,False,False
+Dr. N.K. Mishra,Neuro-Radiology,nkmishra@aiims.ac.in,,False,False,False
+Dr. N.R. Jagannathan,NMR,nrj@aiims.ac.in,jagan1954@hotmail.com,False,False,False
+Dr. A. Malhotra,Nuclear Medicine,arun@aiims.ac.in,,False,False,False
+Dr. Suneeta Mittal,Obst & Gynaecology ,smittal@aiims.ac.in,suneeta_mittal@yahoo.com,False,False,False
+Dr. P.P. Kotwal,Orthopaedics,,,False,False,False
+Dr. V.K. Paul,Pediatrics,vkpaul@aiims.ac.in,,False,False,False
+Dr. D.K. Gupta,Pediatrics Surgery,dkgupta@aiims.ac.in,,False,False,False
+Dr. S.K. Panda,Pathology,skpanda@aiims.ac.in,,False,False,False
+Dr. Y.K. Gupta,Pharmacology,ykgupta@aiims.ac.in,,False,False,False
+Dr. J. Sengupta,Physiology,jsen@aiims.ac.in,,False,False,False
+Dr. Rajat Ray,Psychiatry & De-addiction,rray@aiims.ac.in,,False,False,False
+Dr. U. Singh,Physical Med. Rehab. (PMR),usingh@aiims.ac.in,pmr@aiims.ac.in,False,False,False
+Dr. Arun Gupta,Radio-Diagnosis,,,False,False,False
+Dr. Supriyo Ghose,RPC (Chief),sghose@aiims.ac.in,,False,False,False
+Dr. Anand Kumar,Reproductive Biology,anand@aiims.ac.in,anandkumarrepbiol@hotmail.com ,False,False,False
+Dr. M.C. Misra,Surgery,mcmisra@aiims.ac.in,,False,False,False
+Dr. N.P. Gupta,Urology,npgupta@aiims.ac.in,narmadagupta@hotmail.com,False,False,False
+,,,.,False,False,False

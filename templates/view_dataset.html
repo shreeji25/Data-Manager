@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html>
+<head>
+<link rel="stylesheet" href="/static/css/common.css">
+<link rel="stylesheet" href="/static/css/view.css">
+<style>
+/* ── Smart Paginator ── */
+.pagination { display: flex; justify-content: center; padding: 20px 0 8px; }
+.pagination-controls { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; justify-content: center; }
+.page-btn {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-width: 36px; height: 36px; padding: 0 10px;
+    border: 1.5px solid #e0e7ff; border-radius: 8px;
+    background: #fff; color: #374151;
+    font-size: 14px; font-weight: 500;
+    text-decoration: none; transition: all 0.15s;
+    cursor: pointer;
+}
+.page-btn:hover:not(.disabled):not(.dots) { background: #eef2ff; border-color: #a5b4fc; color: #4f46e5; }
+.page-btn.active { background: #4f46e5; border-color: #4f46e5; color: #fff; font-weight: 700; box-shadow: 0 2px 8px rgba(79,70,229,0.18); }
+.page-btn.dots { border-color: transparent; background: transparent; cursor: default; letter-spacing: 1px; }
+.page-btn.page-nav { padding: 0 14px; font-size: 13px; color: #4f46e5; border-color: #c7d2fe; }
+.page-btn.page-nav:hover:not(.disabled) { background: #4f46e5; color: #fff; border-color: #4f46e5; }
+.page-btn.disabled { color: #c4c4c4; border-color: #e5e7eb; background: #fafafa; cursor: not-allowed; pointer-events: none; }
+</style>
+</head>
+<body class="bg">
+
+<div class="card wide scroll">
+<h3>
+Total: {{dataset.row_count}}
+<span class="ok">Actual: {{dataset.actual_records}}</span>
+<span class="bad">Duplicates: {{dataset.duplicate_records}}</span>
+</h3>
+
+<table>
+<tr>
+{% for c in columns %}<th>{{c}}</th>{% endfor %}
+</tr>
+
+{% for r in rows %}
+<tr>
+{% for c in columns %}<td>{{r[c]}}</td>{% endfor %}
+</tr>
+{% endfor %}
+</table>
+
+ <div class="pagination">
+    <div class="pagination-controls">
+
+        <!-- Previous -->
+        {% if page > 1 %}
+        <a href="?page={{ page - 1 }}&q={{ q }}&category={{ category }}" class="page-btn page-nav">‹ Previous</a>
+        {% else %}
+        <span class="page-btn page-nav disabled">‹ Previous</span>
+        {% endif %}
+
+        <!-- Page 1 -->
+        <a href="?page=1&q={{ q }}&category={{ category }}"
+           class="page-btn {% if page == 1 %}active{% endif %}">1</a>
+
+        <!-- Left ellipsis -->
+        {% if page > 4 %}
+        <span class="page-btn dots">...</span>
+        {% endif %}
+
+        <!-- Middle window -->
+        {% set win_start = [page - 1, 2] | max %}
+        {% set win_end   = [page + 1, total_pages - 1] | min %}
+        {% for p in range(win_start, win_end + 1) %}
+        <a href="?page={{ p }}&q={{ q }}&category={{ category }}"
+           class="page-btn {% if p == page %}active{% endif %}">{{ p }}</a>
+        {% endfor %}
+
+        <!-- Right ellipsis -->
+        {% if page < total_pages - 3 %}
+        <span class="page-btn dots">...</span>
+        {% endif %}
+
+        <!-- Last page -->
+        {% if total_pages > 1 %}
+        <a href="?page={{ total_pages }}&q={{ q }}&category={{ category }}"
+           class="page-btn {% if page == total_pages %}active{% endif %}">{{ total_pages }}</a>
+        {% endif %}
+
+        <!-- Next -->
+        {% if page < total_pages %}
+        <a href="?page={{ page + 1 }}&q={{ q }}&category={{ category }}" class="page-btn page-nav">Next ›</a>
+        {% else %}
+        <span class="page-btn page-nav disabled">Next ›</span>
+        {% endif %}
+
+    </div>
+</div>
+
+
+</div>
+</body>
+</html>

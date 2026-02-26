@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ dataset.file_name }} — Duplicate Records</title>
+    <link rel="stylesheet" href="/static/css/common.css">
+    <link rel="stylesheet" href="/static/css/relation.css">
+    <link rel="stylesheet" href="/static/css/loading.css">
+    <link rel="icon" href="data:,">
+<style>
+/* ── Column resize handle — relation page ── */
+
+.rel-data-table thead th {
+    position: relative !important;
+    user-select: none !important;
+    overflow: visible !important;
+}
+.rel-data-table thead th.resizing {
+    background: #2a56b0 !important;
+    opacity: 0.9;
+}
+.col-resize-handle {
+    position: absolute;
+    top: 0; right: 0;
+    width: 18px; height: 100%;
+    display: flex; align-items: center; justify-content: center;
+    cursor: col-resize;
+    z-index: 5;
+    opacity: 0.35;
+    transition: opacity 0.15s, background 0.15s;
+    border-left: 1px solid rgba(255,255,255,0.2);
+}
+.col-resize-handle:hover {
+    opacity: 1;
+    background: rgba(255,255,255,0.12);
+}
+.col-resize-grip {
+    display: flex; align-items: center; justify-content: center;
+    color: rgba(255,255,255,0.9);
+    pointer-events: none;
+}
+</style>
+</head>
+
+<body class="rel-body">
+<div class="rel-page">
+
+    <!-- ═══════════════ MAIN HEADER ═══════════════ -->
+    <div class="rel-main-header">
+        <div class="rel-header-left">
+            <h1 class="rel-header-title">
+                {{ dataset.file_name }}<span class="rel-header-dim"> — Duplicate Records</span>
+            </h1>
+            <p class="rel-header-sub">Showing duplicates detected across phone and email fields</p>
+        </div>
+        <div class="rel-header-actions">
+            <a href="/dashboard" class="rel-btn-back">
+                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path d="M19 12H5M12 5l-7 7 7 7"/>
+                </svg>
+                Back to Dashboard
+            </a>
+            <a href="/export/clean-relations/{{ dataset.id }}" class="rel-btn-export">
+                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/>
+                </svg>
+                Clean &amp; Export
+            </a>
+        </div>
+    </div>
+
+    <!-- ═══════════════ ERROR BOX ═══════════════ -->
+    {% if extract_error %}
+    <div class="rel-error-box">
+        <strong>⚠️ Could not read duplicate data</strong>
+        {{ extract_error }}
+        <br><strong>How to fix:</strong>
+        1. Visit <a href="/debug/dataset/{{ dataset.id }}">/debug/dataset/{{ dataset.id }}</a> (admin only).<br>
+        2. If the file is missing, re-upload it.
+    </div>
+    {% endif %}
+
+    <!-- ═══════════════ METRIC STRIP ═══════════════ -->
+    {% set max_count = [combined_count, phone_count, email_count] | max %}
+    <div class="rel-metric-strip">
+        <a href="?mode=combined&page=1&search="
+           class="rel-metric-card combined {% if mode == 'combined' %}active{% endif %}">
+            <div class="rel-metric-top">
+                <div class="rel-metric-icon">🔗</div>
+                <span class="rel-metric-badge combined">Combined</span>
+            </div>
+            <div class="rel-metric-num combined">{{ combined_count }}</div>
+            <div class="rel-metric-label">duplicate groups</div>
+            <div class="rel-metric-bar">
+                <div class="rel-metric-bar-fill combined"
+                     style="width:{{ [((combined_count / max_count * 100) | int), 4] | max if max_count > 0 else 4 }}%"></div>
+            </div>
+        </a>
+        <a href="?mode=phone&page=1&search="
+           class="rel-metric-card phone {% if mode == 'phone' %}active{% endif %}">
+            <div class="rel-metric-top">
+                <div class="rel-metric-icon">📞</div>
+                <span class="rel-metric-badge phone">Phone</span>
+            </div>
+            <div class="rel-metric-num phone">{{ phone_count }}</div>
+            <div class="rel-metric-label">duplicate groups</div>
+            <div class="rel-metric-bar">
+                <div class="rel-metric-bar-fill phone"
+                     style="width:{{ [((phone_count / max_count * 100) | int), 4] | max if max_count > 0 else 4 }}%"></div>
+            </div>
+        </a>
+        <a href="?mode=email&page=1&search="
+           class="rel-metric-card email {% if mode == 'email' %}active{% endif %}">
+            <div class="rel-metric-top">
+                <div class="rel-metric-icon">✉️</div>
+                <span class="rel-metric-badge email">Email</span>
+            </div>
+            <div class="rel-metric-num email">{{ email_count }}</div>
+            <div class="rel-metric-label">duplicate groups</div>
+            <div class="rel-metric-bar">
+                <div class="rel-metric-bar-fill email"
+                     style="width:{{ [((email_count / max_count * 100) | int), 4] | max if max_count > 0 else 4 }}%"></div>
+            </div>
+        </a>
+    </div>
+
+    <!-- ═══════════════ TOOLBAR ═══════════════ -->
+    <div class="rel-toolbar">
+
+        <div class="rel-search-wrap">
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>
+            </svg>
+            <input id="relSearchInput" type="text"
+                   placeholder="Search phone or email…"
+                   value="{{ search }}"
+                   oninput="relHandleSearch(this.value)">
+        </div>
+
+        <div class="rel-toolbar-sep"></div>
+
+        <div class="rel-sort-group">
+            <span class="rel-sort-label">Sort:</span>
+            <button class="rel-sort-chip" data-sort="phone" onclick="relSetSort('phone',this)">
+                Phone <span class="rel-arrow">↕</span>
+            </button>
+            <button class="rel-sort-chip" data-sort="email" onclick="relSetSort('email',this)">
+                Email <span class="rel-arrow">↕</span>
+            </button>
+            <button class="rel-sort-chip active" data-sort="count" id="relDefaultSortBtn" onclick="relSetSort('count',this)">
+                Count <span class="rel-arrow">↓</span>
+            </button>
+        </div>
+
+        <div class="rel-toolbar-sep"></div>
+
+        <span class="rel-results-label" id="relResultsLabel">{{ total }} group{{ 's' if total != 1 else '' }}</span>
+
+        <button class="rel-btn-reset {% if search %}has-filters{% endif %}"
+                id="relResetBtn" onclick="relResetFilters()">
+            <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+                <path d="M3 3v5h5"/>
+            </svg>
+            Reset Filters
+        </button>
+
+    </div>
+
+    <!-- ═══════════════ CARDS LIST ═══════════════ -->
+    <div class="rel-cards-list" id="relCardsList">
+
+        {% if records %}
+            {% for r in records %}
+            <div class="rel-dup-card"
+                 data-phone="{{ r.phone or '' }}"
+                 data-email="{{ r.email or '' }}"
+                 data-count="{{ r.user_count | int }}"
+                 data-match="{{ r.match_type or 'both' }}"
+                 data-dataset-id="{{ dataset.id }}">
+
+                <div class="rel-card-header" onclick="relToggleCard(this.parentElement)">
+                    <div class="rel-card-idx">{{ '%02d' % loop.index }}</div>
+                    <div class="rel-card-info">
+
+                        {% if r.phone %}
+                        <div class="rel-info-chip">
+                            <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 8.63 19.79 19.79 0 01.08 4.06 2 2 0 012.06 2h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/>
+                            </svg>
+                            {{ r.phone }}
+                        </div>
+                        {% else %}
+                        <div class="rel-info-chip empty">— no phone —</div>
+                        {% endif %}
+
+                        {% if r.email %}
+                        <div class="rel-info-chip">
+                            <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                                <polyline points="22,6 12,13 2,6"/>
+                            </svg>
+                            {{ r.email }}
+                        </div>
+                        {% else %}
+                        <div class="rel-info-chip empty">— no email —</div>
+                        {% endif %}
+
+                        <span class="rel-match-pill {{ r.match_type or 'both' }}">
+                            {% if r.match_type == 'phone' %}Phone Only
+                            {% elif r.match_type == 'email' %}Email Only
+                            {% else %}Phone + Email{% endif %}
+                        </span>
+                    </div>
+                    <div class="rel-count-pill">
+                        <div class="rel-count-dot"></div>
+                        {{ r.user_count }} record{{ 's' if r.user_count != 1 else '' }}
+                    </div>
+                    <div class="rel-card-chevron">▾</div>
+                </div>
+
+                <!-- Expanded body: loaded lazily via AJAX on first open -->
+                <div class="rel-card-body">
+                    <div class="rel-inner-sort-bar" style="display:none;">
+                        <span class="rel-inner-sort-label">Sort rows:</span>
+                    </div>
+                    <div class="rel-records-grid">
+                        <div class="rel-card-loading">
+                            <div class="rel-spinner"></div>
+                            <span>Loading…</span>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            {% endfor %}
+
+        {% else %}
+            <div class="rel-empty-state">
+                {% if extract_error %}
+                    ⚠️ Error reading file — see details above
+                {% else %}
+                    No duplicates found for <strong>{{ mode }}</strong> mode.
+                {% endif %}
+            </div>
+        {% endif %}
+
+    </div>
+
+    <!-- ═══════════════ PAGINATION ═══════════════ -->
+    {% if total_pages > 1 %}
+    <div class="rel-pagination">
+        <div class="rel-pagination-controls">
+
+            {% if page > 1 %}
+            <a href="?mode={{ mode }}&page={{ page - 1 }}&search={{ search }}" class="rel-pg-btn nav">‹ Previous</a>
+            {% else %}
+            <span class="rel-pg-btn nav disabled">‹ Previous</span>
+            {% endif %}
+
+            <a href="?mode={{ mode }}&page=1&search={{ search }}"
+               class="rel-pg-btn {% if page == 1 %}active{% endif %}">1</a>
+
+            {% if page > 4 %}<span class="rel-pg-btn dots">…</span>{% endif %}
+
+            {% set win_start = [page - 1, 2] | max %}
+            {% set win_end   = [page + 1, total_pages - 1] | min %}
+            {% for p in range(win_start, win_end + 1) %}
+            <a href="?mode={{ mode }}&page={{ p }}&search={{ search }}"
+               class="rel-pg-btn {% if p == page %}active{% endif %}">{{ p }}</a>
+            {% endfor %}
+
+            {% if page < total_pages - 3 %}<span class="rel-pg-btn dots">…</span>{% endif %}
+
+            {% if total_pages > 1 %}
+            <a href="?mode={{ mode }}&page={{ total_pages }}&search={{ search }}"
+               class="rel-pg-btn {% if page == total_pages %}active{% endif %}">{{ total_pages }}</a>
+            {% endif %}
+
+            {% if page < total_pages %}
+            <a href="?mode={{ mode }}&page={{ page + 1 }}&search={{ search }}" class="rel-pg-btn nav">Next ›</a>
+            {% else %}
+            <span class="rel-pg-btn nav disabled">Next ›</span>
+            {% endif %}
+
+        </div>
+    </div>
+    {% endif %}
+
+</div>
+
+<script src="/static/js/loading.js"></script>
+<script src="/static/js/col_resize.js"></script>
+<script src="/static/js/relation.js"></script>
+<script>
+// Auto-init resize on any .rel-data-table injected by relation.js AJAX
+const _relResizeObserver = new MutationObserver((mutations) => {
+  mutations.forEach(m => {
+    m.addedNodes.forEach(node => {
+      if (!node.querySelectorAll) return;
+      // Newly injected table
+      node.querySelectorAll('.rel-data-table').forEach(t => initColResize(t, 80));
+      // If the node itself is the table
+      if (node.classList && node.classList.contains('rel-data-table')) {
+        initColResize(node, 80);
+      }
+    });
+  });
+});
+_relResizeObserver.observe(document.body, { childList: true, subtree: true });
+</script>
+</body>
+</html>

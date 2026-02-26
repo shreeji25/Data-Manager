@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Dashboard{% endblock %} - Data Manager</title>
+    <link rel="stylesheet" href="/static/css/common.css">
+    {% block css %}{% endblock %}
+    <link rel="icon" href="data:,">
+</head>
+<body class="bg">
+
+<!-- Header -->
+{% if show_header %}
+<header class="main-header">
+    <div class="header-container">
+        <div class="header-left">
+            <h1 class="logo">
+                <a href="/dashboard">📊 Data Manager</a>
+            </h1>
+        </div>
+        
+        <nav class="header-nav">
+            <!-- Navigation removed - links available in sidebar -->
+        </nav>
+        
+        <div class="header-right">
+            <div class="user-menu">
+                <button class="user-menu-btn" onclick="toggleUserMenu()">
+                    <div class="user-avatar">{{ user.username[0]|upper }}</div>
+                    <span class="user-name">{{ user.username }}</span>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="6 9 12 15 18 9"/>
+                    </svg>
+                </button>
+                <div class="user-dropdown" id="userDropdown">
+                    <div class="user-dropdown-header">
+                        <div class="user-dropdown-name">{{ user.full_name or user.username }}</div>
+                        <div class="user-dropdown-email">{{ user.email }}</div>
+                        <div class="user-role-badge">{{ user.role|upper }}</div>
+                    </div>
+                    <div class="user-dropdown-divider"></div>
+                    <a href="/profile" class="user-dropdown-item">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                            <circle cx="12" cy="7" r="4"/>
+                        </svg>
+                        Profile
+                    </a>
+                    <a href="/settings" class="user-dropdown-item">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="3"/>
+                            <path d="M12 1v6m0 6v6m5.2-13.2l-4.2 4.2m-2 2l-4.2 4.2m13.2-5.2l-6 0m-6 0l-6 0m13.2 5.2l-4.2-4.2m-2-2l-4.2-4.2"/>
+                        </svg>
+                        Settings
+                    </a>
+                    <div class="user-dropdown-divider"></div>
+                    <a href="/logout" class="user-dropdown-item logout">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                            <polyline points="16 17 21 12 16 7"/>
+                            <line x1="21" y1="12" x2="9" y2="12"/>
+                        </svg>
+                        Logout
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</header>
+{% endif %}
+
+<!-- Sidebar -->
+{% if admin_mode and admin_users %}
+<!-- Admin Sidebar: User List -->
+<aside class="sidebar">
+    <div class="sidebar-header">
+        <h3 class="sidebar-title">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                <circle cx="9" cy="7" r="4"/>
+                <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+            </svg>
+            Users
+        </h3>
+        {% if viewing_user %}
+        <form method="POST" action="/admin/exit-view" style="margin-top: 12px;">
+            <button type="submit" class="btn-exit-view">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                    <polyline points="16 17 21 12 16 7"/>
+                    <line x1="21" y1="12" x2="9" y2="12"/>
+                </svg>
+                All Files
+            </button>
+        </form>
+        {% endif %}
+    </div>
+    
+    <div class="sidebar-content">
+        {% for u in admin_users %}
+        <form method="POST" action="/admin/select-user/{{ u[0].id }}" class="admin-user-form">
+            <button type="submit" class="admin-user-btn {% if viewing_user and viewing_user.id == u[0].id %}active{% endif %}">
+                <div class="admin-user-avatar">{{ u[0].username[0]|upper }}</div>
+                <div class="admin-user-info">
+                    <div class="admin-user-name">{{ u[0].username }}</div>
+                    <div class="admin-user-datasets">{{ u[1] }} datasets</div>
+                </div>
+            </button>
+        </form>
+        {% endfor %}
+    </div>
+    
+    <!-- Manage Users Button at Bottom -->
+    <div class="sidebar-footer">
+        <a href="/cross-relations" class="rel-btn" style="margin-top:auto; display:block; text-align:center;">
+        🔗 Cross-File Relations
+       </a>
+        <a href="/landing" class="btn-sidebar-about">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/>
+                <line x1="12" y1="8" x2="12" y2="12"/>
+                <line x1="12" y1="16" x2="12.01" y2="16"/>
+            </svg>
+            About
+        </a>
+        <a href="/admin/panel" class="btn-manage-users">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                <circle cx="9" cy="7" r="4"/>
+                <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+            </svg>
+            Manage Users
+        </a>
+    </div>
+</aside>
+
+{% elif not admin_mode and show_header is defined and show_header and show_sidebar is not defined %}
+<!-- Regular User Sidebar: Categories -->
+<aside class="sidebar">
+    <div class="sidebar-header">
+        <h3 class="sidebar-title">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+            </svg>
+            Categories
+        </h3>
+        <button class="btn-add-category" onclick="showAddCategoryModal()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="12" y1="5" x2="12" y2="19"/>
+                <line x1="5" y1="12" x2="19" y2="12"/>
+            </svg>
+            Add
+        </button>
+    </div>
+    
+    <div class="sidebar-content">
+        <!-- All Datasets -->
+        <a href="/dashboard" class="category-item-link">
+            <div class="category-item-content">
+                <span class="category-name">All Datasets</span>
+               {% if total_datasets is defined and total_datasets > 0 %}
+               <span class="category-count">{{ total_datasets }}</span>
+                {% endif %}
+            </div>
+        </a>
+        
+        {% if not categories %}
+        <div style="padding: 12px 14px; font-size: 12px; color: #9399b2; line-height: 1.5;">
+        No categories yet.<br>Click <strong>+ Add</strong> above to create your first category before uploading.
+        </div>
+    {% endif %}
+        <!-- User Categories with Hover Actions -->
+        {% for cat in categories %}
+        <div class="category-item-wrapper">
+            <a href="/dashboard?category={{ cat.name }}" class="category-item-link">
+                <div class="category-item-content">
+                    <span class="category-name">{{ cat.name }}</span>
+                    {% if category_counts.get(cat.name, 0) > 0 %}
+                    <span class="category-count">{{ category_counts.get(cat.name, 0) }}</span>
+                    {% endif %}
+                </div>
+            </a>
+            <div class="category-actions">
+                <button class="category-action-btn" onclick="event.stopPropagation(); renameCategory({{ cat.id }}, '{{ cat.name }}');" title="Rename">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                    </svg>
+                </button>
+                <button class="category-action-btn category-delete" onclick="event.stopPropagation(); deleteCategory({{ cat.id }}, '{{ cat.name }}');" title="Delete">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="3 6 5 6 21 6"/>
+                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    <a href="/cross-relations" class="rel-btn" style="margin-top:auto; display:block; text-align:center;">
+  🔗 Cross-File Relations
+</a>
+    <!-- Upload Button at Bottom -->
+    <div class="sidebar-footer">
+        <a href="/landing" class="btn-sidebar-about">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/>
+                <line x1="12" y1="8" x2="12" y2="12"/>
+                <line x1="12" y1="16" x2="12.01" y2="16"/>
+            </svg>
+            About
+        </a>
+        <a href="/upload" class="btn-sidebar-upload">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="17 8 12 3 7 8"/>
+                <line x1="12" y1="3" x2="12" y2="15"/>
+            </svg>
+            Upload Dataset
+        </a>
+    </div>
+</aside>
+{% endif %}
+
+<!-- Main Content -->
+<main class="main-content">
+    {% block content %}{% endblock %}
+</main>
+
+<!-- Add Category Modal -->
+<div class="modal" id="addCategoryModal">
+    <div class="modal-overlay" onclick="hideAddCategoryModal()"></div>
+    <div class="modal-dialog modal-sm">
+        <div class="modal-header">
+            <h3>New Category</h3>
+            <button class="modal-close" onclick="hideAddCategoryModal()">×</button>
+        </div>
+        <form id="addCategoryForm" onsubmit="addCategory(event)">
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Category Name</label>
+                    <input type="text" name="name" class="form-input" placeholder="Enter category name..." required maxlength="50">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-secondary" onclick="hideAddCategoryModal()">Cancel</button>
+                <button type="submit" class="btn-primary">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="12" y1="5" x2="12" y2="19"/>
+                        <line x1="5" y1="12" x2="19" y2="12"/>
+                    </svg>
+                    Create
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% block js %}{% endblock %}
+
+<script>
+// Toggle user menu dropdown
+function toggleUserMenu() {
+    const dropdown = document.getElementById('userDropdown');
+    dropdown.classList.toggle('show');
+}
+
+// Close dropdown when clicking outside
+window.addEventListener('click', function(e) {
+    if (!e.target.closest('.user-menu')) {
+        const dropdown = document.getElementById('userDropdown');
+        if (dropdown) dropdown.classList.remove('show');
+    }
+});
+
+// Category Management Functions
+function showAddCategoryModal() {
+    document.getElementById('addCategoryModal').classList.add('show');
+    document.body.style.overflow = 'hidden';
+}
+
+function hideAddCategoryModal() {
+    document.getElementById('addCategoryModal').classList.remove('show');
+    document.body.style.overflow = '';
+    document.getElementById('addCategoryForm').reset();
+}
+
+async function addCategory(event) {
+    event.preventDefault();
+    
+    const formData = new FormData(event.target);
+    
+    try {
+        const response = await fetch('/category/create', {
+            method: 'POST',
+            body: formData
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            hideAddCategoryModal();
+            location.reload();
+        } else {
+            alert('Error: ' + data.error);
+        }
+    } catch (error) {
+        alert('Error: ' + error.message);
+    }
+}
+
+function renameCategory(categoryId, oldName) {
+    const newName = prompt('Rename category:', oldName);
+    if (!newName || newName === oldName) return;
+    
+    const formData = new FormData();
+    formData.append('name', newName);
+    
+    fetch(`/category/rename/${categoryId}`, {
+        method: 'POST',
+        body: formData
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Error: ' + (data.error || 'Failed to rename category'));
+        }
+    })
+    .catch(err => {
+        alert('Error: ' + err.message);
+    });
+}
+
+function deleteCategory(categoryId, name) {
+    if (!confirm(`Delete category "${name}"?\n\nDatasets in this category will not be deleted.`)) return;
+    
+    window.location.href = `/category/delete/${categoryId}`;
+}
+</script>
+
+</body>
+</html>

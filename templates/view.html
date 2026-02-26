@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>View Dataset</title>
+    <link rel="stylesheet" href="/static/css/common.css">
+    <link rel="stylesheet" href="/static/css/view.css">
+    <link rel="stylesheet" href="/static/css/loading.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <link rel="icon" href="data:,">
+</head>
+
+<body class="bg">
+<div class="view-root">
+
+    <!-- ═══════════════ MAIN AREA ═══════════════ -->
+    <div class="view-main" id="viewMain">
+    <div class="view-page">
+
+        <!-- ═══════════════ HEADER ═══════════════ -->
+        <div class="card view-header-card">
+            <div class="view-header">
+                <div class="view-header-left">
+                    <a href="/dashboard" class="btn-back">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/>
+                        </svg>
+                    </a>
+                    <h2 class="dataset-title">{{ dataset.file_name }}</h2>
+                </div>
+                <div class="view-header-right">
+                    <button class="sidebar-toggle-btn" id="sidebarToggle" onclick="toggleSidebar()" title="Toggle Insights Panel">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="3" y="3" width="18" height="18" rx="2"/><line x1="15" y1="3" x2="15" y2="21"/>
+                        </svg>
+                        Insights
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ═══════════════ STATS ═══════════════ -->
+        <div class="stats-container">
+            <div class="stat-card">
+                <span class="stat-label">Total Records</span>
+                <span class="stat-value">{{ dataset.row_count | default(0) }}</span>
+            </div>
+            <div class="stat-card stat-clean">
+                <span class="stat-label">Clean Records</span>
+                <span class="stat-value">{{ dataset.actual_records | default(0) }}</span>
+            </div>
+            <a href="?page=1&show={% if show == 'duplicates' %}all{% else %}duplicates{% endif %}" style="flex:1;text-decoration:none;display:flex;">
+                <div class="stat-card stat-danger" style="flex:1;">
+                    <span class="stat-label">{% if show == 'duplicates' %}← Show All{% else %}Phone/Email Dups{% endif %}</span>
+                    <span class="stat-value">{{ dataset.duplicate_records | default(0) }}</span>
+                </div>
+            </a>
+            <a href="?page=1&show={% if show == 'exact' %}all{% else %}exact{% endif %}" style="flex:1;text-decoration:none;display:flex;">
+                <div class="stat-card stat-exact" style="flex:1;">
+                    <span class="stat-label">{% if show == 'exact' %}← Show All{% else %}Exact Dups{% endif %}</span>
+                    <span class="stat-value">{{ exact_dup_count | default(0) }}</span>
+                </div>
+            </a>
+        </div>
+
+        <!-- ═══════════════ TABLE ═══════════════ -->
+        <div class="card view-table-card">
+            <div class="view-table-scroll">
+                <table class="view-table">
+                    <thead>
+                        <tr>
+                            {% for col in columns %}
+                                {% if col not in ['__dup_combined__', '__dup_phone__', '__dup_email__', '__exact_dup__'] %}
+                                    <th>
+                                        {{ col | upper }}
+                                        <div class="col-resize-handle"><span class="col-resize-grip">⋮</span></div>
+                                    </th>
+                                {% endif %}
+                            {% endfor %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if rows %}
+                            {% for row in rows %}
+                                <tr {% if row.get('__dup_combined__') %}class="duplicate-row"{% elif row.get('__exact_dup__') %}class="exact-dup-row"{% endif %}>
+                                    {% for col in columns %}
+                                        {% if col not in ['__dup_combined__', '__dup_phone__', '__dup_email__', '__exact_dup__'] %}
+                                            <td>{{ row[col] }}</td>
+                                        {% endif %}
+                                    {% endfor %}
+                                </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td colspan="{{ columns|length }}" style="text-align:center;padding:28px;color:#888;">No records found</td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- ═══════════════ PAGINATION ═══════════════ -->
+        {% if total_pages > 1 %}
+        <div class="pagination">
+            <div class="pagination-controls">
+                {% if page > 1 %}
+                <a href="?show={{ show or '' }}&page={{ page - 1 }}" class="page-btn page-nav">‹ Previous</a>
+                {% else %}
+                <span class="page-btn page-nav disabled">‹ Previous</span>
+                {% endif %}
+
+                <a href="?show={{ show or '' }}&page=1" class="page-btn {% if page == 1 %}active{% endif %}">1</a>
+                {% if page > 4 %}<span class="page-btn dots">...</span>{% endif %}
+
+                {% set win_start = [page - 1, 2] | max %}
+                {% set win_end   = [page + 1, total_pages - 1] | min %}
+                {% for p in range(win_start, win_end + 1) %}
+                <a href="?show={{ show or '' }}&page={{ p }}" class="page-btn {% if p == page %}active{% endif %}">{{ p }}</a>
+                {% endfor %}
+
+                {% if page < total_pages - 3 %}<span class="page-btn dots">...</span>{% endif %}
+
+                {% if total_pages > 1 %}
+                <a href="?show={{ show or '' }}&page={{ total_pages }}" class="page-btn {% if page == total_pages %}active{% endif %}">{{ total_pages }}</a>
+                {% endif %}
+
+                {% if page < total_pages %}
+                <a href="?show={{ show or '' }}&page={{ page + 1 }}" class="page-btn page-nav">Next ›</a>
+                {% else %}
+                <span class="page-btn page-nav disabled">Next ›</span>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+
+    </div><!-- /view-page -->
+    </div><!-- /view-main -->
+
+    <!-- ═══════════════ RIGHT SIDEBAR ═══════════════ -->
+    <aside class="insights-sidebar" id="insightsSidebar">
+
+        <div class="isb-header">
+            <span class="isb-title">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+                Insights
+            </span>
+            <button class="isb-close" onclick="toggleSidebar()">✕</button>
+        </div>
+
+        <div class="isb-tabs">
+            <button class="isb-tab active" onclick="showPanel('file-info', this)">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                Info
+            </button>
+            <button class="isb-tab" onclick="showPanel('duplicates', this)">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+                Dupes
+            </button>
+            <button class="isb-tab" onclick="showPanel('relations', this)">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+                Relations
+            </button>
+            <button class="isb-tab" onclick="showPanel('visualisation', this)">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+                Charts
+            </button>
+            <button class="isb-tab" onclick="showPanel('export', this)">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                Export
+            </button>
+        </div>
+
+        <div class="isb-body">
+
+            <!-- ══ PANEL 1: FILE INFO ══ -->
+            <div class="isb-panel active" id="panel-file-info">
+                <div class="isb-section-title">File Details</div>
+                <div class="info-row"><span class="info-label">Name</span><span class="info-value" title="{{ dataset.file_name }}">{{ dataset.file_name }}</span></div>
+                <div class="info-row"><span class="info-label">Category</span><span class="info-value">{{ dataset.department or '—' }}</span></div>
+                <div class="info-row"><span class="info-label">Uploaded</span><span class="info-value">{{ dataset.created_at.strftime('%d %b %Y') if dataset.created_at else '—' }}</span></div>
+                <div class="info-row"><span class="info-label">Total Rows</span><span class="info-value">{{ dataset.row_count | default(0) }}</span></div>
+                <div class="info-row"><span class="info-label">Clean Rows</span><span class="info-value" style="color:#16a34a;font-weight:700;">{{ dataset.actual_records | default(0) }}</span></div>
+
+                <div class="isb-section-title" style="margin-top:16px;">Data Health</div>
+                {% set health = sidebar_stats.health_score | default(100) %}
+                <div class="health-score-wrap">
+                    <div class="health-score-label">
+                        <span>{{ health }}% Clean</span>
+                        <span class="health-badge {% if health >= 80 %}good{% elif health >= 50 %}warn{% else %}bad{% endif %}">
+                            {% if health >= 80 %}Good{% elif health >= 50 %}Fair{% else %}Poor{% endif %}
+                        </span>
+                    </div>
+                    <div class="health-bar">
+                        <div class="health-bar-fill {% if health >= 80 %}good{% elif health >= 50 %}warn{% else %}bad{% endif %}" style="width:{{ health }}%"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ══ PANEL 2: DUPLICATES ══ -->
+            <div class="isb-panel" id="panel-duplicates">
+                <div class="isb-section-title">Exact Row Duplicates</div>
+                <p class="isb-hint">Rows where every column value is identical to another row.</p>
+
+                <div class="dup-count-card {% if exact_dup_count > 0 %}has-dups{% endif %}">
+                    <div class="dup-count-num">{{ exact_dup_count | default(0) }}</div>
+                    <div class="dup-count-label">exact duplicate rows found</div>
+                    {% if exact_dup_count > 0 %}
+                    <a href="?page=1&show=exact" class="dup-filter-btn">View in table →</a>
+                    {% endif %}
+                </div>
+
+                {% if exact_dup_groups %}
+                <div class="isb-section-title" style="margin-top:16px;">Top Groups</div>
+                {% for group in exact_dup_groups %}
+                <div class="dup-group-card">
+                    <div class="dup-group-count">× {{ group.count }}</div>
+                    <div class="dup-group-values">
+                        {% for col, val in group.sample.items() %}
+                        <div class="dup-group-row">
+                            <span class="dup-col">{{ col }}</span>
+                            <span class="dup-val">{{ val[:28] }}{% if val|length > 28 %}…{% endif %}</span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endfor %}
+                {% else %}
+                <div class="isb-empty">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="1.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                    <p>No exact duplicates found!</p>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- ══ PANEL 3: RELATIONS ══ -->
+            <div class="isb-panel" id="panel-relations">
+                <div class="isb-section-title">Contact Duplicates</div>
+                <p class="isb-hint">Duplicates detected by phone & email matching.</p>
+
+                <a href="/dataset/{{ dataset.id }}/relations?mode=combined" class="relation-chip combined">
+                    <div class="rc-icon">⊕</div>
+                    <div class="rc-info"><div class="rc-label">Combined</div><div class="rc-sub">Phone + Email match</div></div>
+                    <div class="rc-count">{{ sidebar_stats.combined | default(0) }}</div>
+                </a>
+                <a href="/dataset/{{ dataset.id }}/relations?mode=phone" class="relation-chip phone">
+                    <div class="rc-icon">📞</div>
+                    <div class="rc-info"><div class="rc-label">Phone Only</div><div class="rc-sub">Same phone number</div></div>
+                    <div class="rc-count">{{ phone_duplicates | default(0) }}</div>
+                </a>
+                <a href="/dataset/{{ dataset.id }}/relations?mode=email" class="relation-chip email">
+                    <div class="rc-icon">✉️</div>
+                    <div class="rc-info"><div class="rc-label">Email Only</div><div class="rc-sub">Same email address</div></div>
+                    <div class="rc-count">{{ email_duplicates | default(0) }}</div>
+                </a>
+
+                <a href="/dataset/{{ dataset.id }}/relations" class="isb-full-btn" style="margin-top:16px;">
+                    Open Full Relations Page →
+                </a>
+            </div>
+
+            <!-- ══ PANEL 4: VISUALISATION ══ -->
+            <div class="isb-panel" id="panel-visualisation">
+
+                <div class="isb-section-title">Data Health Score</div>
+                <div class="gauge-wrap">
+                    <canvas id="gaugeChart" height="130"></canvas>
+                    <div class="gauge-label">{{ sidebar_stats.health_score | default(100) }}%</div>
+                </div>
+
+                <div class="isb-section-title" style="margin-top:18px;">Record Breakdown</div>
+                <div class="chart-wrap"><canvas id="donutChart" height="180"></canvas></div>
+
+                <div class="isb-section-title" style="margin-top:18px;">Duplicate Types</div>
+                <div class="chart-wrap"><canvas id="barChart" height="150"></canvas></div>
+
+                <div class="isb-section-title" style="margin-top:18px;">Column Fill Rate</div>
+                <p class="isb-hint">% of rows with a value per column. Red = sparse.</p>
+                <div class="chart-wrap">
+                    <canvas id="fillChart"></canvas>
+                </div>
+
+                <div class="isb-section-title" style="margin-top:18px;">Top Repeated Rows</div>
+                <p class="isb-hint">Most duplicated exact row groups by count.</p>
+                {% if exact_dup_groups %}
+                <div class="top-dups-table">
+                    {% for group in exact_dup_groups[:5] %}
+                    <div class="tdrow">
+                        <div class="tdrow-badge">×{{ group.count }}</div>
+                        <div class="tdrow-vals">
+                            {% for col, val in group.sample.items() %}
+                            <span>{{ val[:18] }}{% if val|length > 18 %}…{% endif %}</span>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="isb-empty"><p>No exact duplicates to rank.</p></div>
+                {% endif %}
+
+            </div>
+
+            <!-- ══ PANEL 5: EXPORT ══ -->
+            <div class="isb-panel" id="panel-export">
+                <div class="isb-section-title">Download Original</div>
+                <p class="isb-hint">Export the file as uploaded.</p>
+                <a href="/export/csv/{{ dataset.id }}" class="export-btn csv">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                    Export as CSV
+                </a>
+                <a href="/export/excel/{{ dataset.id }}" class="export-btn excel">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                    Export as Excel
+                </a>
+
+                <div class="isb-section-title" style="margin-top:20px;">Download Cleaned</div>
+                <p class="isb-hint">Removes all phone/email duplicate rows.</p>
+                <a href="/export/clean-relations/{{ dataset.id }}" class="export-btn clean">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+                    Download Clean File
+                </a>
+            </div>
+
+        </div><!-- /isb-body -->
+    </aside>
+
+</div><!-- /view-root -->
+
+<script src="/static/js/loading.js"></script>
+<script src="/static/js/view.js"></script>
+<script>
+function toggleSidebar() {
+    const sidebar = document.getElementById('insightsSidebar');
+    const main    = document.getElementById('viewMain');
+    const btn     = document.getElementById('sidebarToggle');
+    sidebar.classList.toggle('open');
+    main.classList.toggle('sidebar-open');
+    btn.classList.toggle('active');
+    if (sidebar.classList.contains('open')) {
+        setTimeout(initCharts, 100);
+    }
+}
+
+function showPanel(name, el) {
+    document.querySelectorAll('.isb-panel').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.isb-tab').forEach(t => t.classList.remove('active'));
+    document.getElementById('panel-' + name).classList.add('active');
+    if (el) el.classList.add('active');
+    if (name === 'visualisation') setTimeout(initCharts, 100);
+}
+
+const STATS      = {{ sidebar_stats | tojson }};
+const FILL_RATES = {{ column_fill_rates | tojson }};
+
+let chartsInit = false;
+function initCharts() {
+    if (chartsInit) return;
+    chartsInit = true;
+
+    const total   = STATS.total    || 0;
+    const actual  = STATS.actual   || 0;
+    const combined= STATS.combined || 0;
+    const phone   = STATS.phone    || 0;
+    const email   = STATS.email    || 0;
+    const exact   = STATS.exact    || 0;
+    const health  = STATS.health_score || 100;
+
+    // Chart 1 — Gauge
+    const gEl = document.getElementById('gaugeChart');
+    if (gEl) {
+        const gc = health >= 80 ? '#16a34a' : health >= 50 ? '#d97706' : '#dc2626';
+        new Chart(gEl, {
+            type: 'doughnut',
+            data: { datasets: [{ data: [health, 100-health], backgroundColor: [gc, '#f1f5f9'], borderWidth: 0, circumference: 180, rotation: 270 }] },
+            options: { responsive: true, cutout: '72%', plugins: { legend: { display: false }, tooltip: { enabled: false } } }
+        });
+    }
+
+    // Chart 2 — Donut breakdown
+    const dEl = document.getElementById('donutChart');
+    if (dEl) {
+        new Chart(dEl, {
+            type: 'doughnut',
+            data: {
+                labels: ['Clean', 'Phone/Email Dups', 'Exact Dups'],
+                datasets: [{ data: [Math.max(actual - exact, 0), combined, exact], backgroundColor: ['#16a34a','#f59e0b','#ef4444'], borderWidth: 2, borderColor: '#fff' }]
+            },
+            options: { responsive: true, cutout: '60%', plugins: { legend: { position: 'bottom', labels: { font: { size: 11 }, padding: 8 } } } }
+        });
+    }
+
+    // Chart 3 — Bar duplicate types
+    const bEl = document.getElementById('barChart');
+    if (bEl) {
+        new Chart(bEl, {
+            type: 'bar',
+            data: {
+                labels: ['Combined','Phone','Email','Exact'],
+                datasets: [{ data: [combined, phone, email, exact], backgroundColor: ['#6366f1','#3b82f6','#06b6d4','#ef4444'], borderRadius: 6, borderSkipped: false }]
+            },
+            options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, grid: { color: '#f1f5f9' }, ticks: { font: { size: 10 } } }, x: { grid: { display: false }, ticks: { font: { size: 11 } } } } }
+        });
+    }
+
+    // Chart 4 — Horizontal fill rate
+    const fEl = document.getElementById('fillChart');
+    if (fEl && FILL_RATES.length > 0) {
+        const labels = FILL_RATES.map(r => r.column.length > 12 ? r.column.slice(0,12)+'…' : r.column);
+        const values = FILL_RATES.map(r => r.fill_rate);
+        const colors = values.map(v => v >= 80 ? '#16a34a' : v >= 50 ? '#d97706' : '#ef4444');
+        fEl.height = Math.max(FILL_RATES.length * 24, 120);
+        new Chart(fEl, {
+            type: 'bar',
+            data: { labels, datasets: [{ data: values, backgroundColor: colors, borderRadius: 4, borderSkipped: false }] },
+            options: {
+                indexAxis: 'y', responsive: true,
+                plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => ` ${FILL_RATES[ctx.dataIndex].fill_rate}% (${FILL_RATES[ctx.dataIndex].empty_count} empty)` } } },
+                scales: { x: { min: 0, max: 100, ticks: { font: { size: 10 }, callback: v => v+'%' }, grid: { color: '#f1f5f9' } }, y: { ticks: { font: { size: 10 } }, grid: { display: false } } }
+            }
+        });
+    }
+}
+</script>
+</body>
+</html>

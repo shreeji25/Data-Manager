@@ -1,0 +1,894 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block css %}
+<link rel="stylesheet" href="/static/css/dashboard.css">
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+  <div class="dashboard-card">
+
+    <!-- ── Header ── -->
+    <div class="dashboard-header">
+      <h2>
+        <span class="header-icon">📁</span>
+        Uploaded Datasets
+      </h2>
+      <div class="dashboard-actions">
+        <button class="btn-advanced-search {% if q or category or from_date or to_date or min_rows or max_rows or has_duplicates %}active{% endif %}"
+                onclick="toggleFilter()" id="filterBtn">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+          </svg>
+          Advanced Search
+        </button>
+      </div>
+    </div>
+
+    <!-- ── Bulk Delete Toolbar (shown when rows selected) ── -->
+    <div class="bulk-toolbar" id="bulkToolbar">
+      <div class="bulk-toolbar-left">
+        <span class="bulk-count" id="bulkCount">0 selected</span>
+        <button class="bulk-select-all-btn" onclick="selectAllVisible()">Select all on page</button>
+        <button class="bulk-deselect-btn" onclick="deselectAll()">Deselect all</button>
+      </div>
+      <button class="bulk-delete-btn" onclick="openBulkDeleteModal()">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="3 6 5 6 21 6"/>
+          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+        </svg>
+        Delete Selected
+      </button>
+    </div>
+
+    <!-- ── Filter Panel ── -->
+    <div class="filter-panel {% if q or category or from_date or to_date or min_rows or max_rows or has_duplicates %}show{% endif %}" id="filterPanel">
+      <form method="GET" action="/dashboard">
+        <div class="filter-grid">
+          <div class="filter-group">
+            <label>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+              </svg>
+              File Name
+            </label>
+            <input type="text" name="q" class="filter-input" placeholder="Search file name..." value="{{ q }}">
+          </div>
+          <div class="filter-group">
+            <label>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+              </svg>
+              Category
+            </label>
+            <select name="category" class="filter-input">
+              <option value="">All Categories</option>
+              {% for cat in categories %}
+              <option value="{{ cat.name }}" {% if category == cat.name %}selected{% endif %}>{{ cat.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="filter-group">
+            <label>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+              </svg>
+              From Date
+            </label>
+            <input type="date" name="from_date" class="filter-input" value="{{ from_date }}">
+          </div>
+          <div class="filter-group">
+            <label>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+              </svg>
+              To Date
+            </label>
+            <input type="date" name="to_date" class="filter-input" value="{{ to_date }}">
+          </div>
+          <div class="filter-group">
+            <label>Min Rows</label>
+            <input type="number" name="min_rows" class="filter-input" placeholder="e.g. 100" value="{{ min_rows }}">
+          </div>
+          <div class="filter-group">
+            <label>Max Rows</label>
+            <input type="number" name="max_rows" class="filter-input" placeholder="e.g. 50000" value="{{ max_rows }}">
+          </div>
+          <div class="filter-group">
+            <label>Has Duplicates</label>
+            <select name="has_duplicates" class="filter-input">
+              <option value="0" {% if not has_duplicates %}selected{% endif %}>All</option>
+              <option value="1" {% if has_duplicates %}selected{% endif %}>With Duplicates Only</option>
+            </select>
+          </div>
+        </div>
+        <div class="filter-actions">
+          <a href="/dashboard" class="btn-reset">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-4.5"/>
+            </svg>
+            Reset
+          </a>
+          <button type="submit" class="btn-apply">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="20 6 9 17 4 12"/>
+            </svg>
+            Apply Filters
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <!-- ── Table ── -->
+    <div class="dashboard-table-wrapper">
+      {% if datasets %}
+      <table class="modern-table" id="datasetsTable">
+        <thead>
+          <tr>
+            {% if not admin_mode %}
+            <th class="col-check" onclick="event.stopPropagation()">
+              <label class="custom-checkbox">
+                <input type="checkbox" id="selectAll" onchange="onSelectAll(this.checked)">
+                <span class="checkmark"></span>
+              </label>
+            </th>
+            {% endif %}
+            <th class="col-filename">
+              <div class="th-content" onclick="sortTable('file_name')">
+                FILE NAME
+                <span class="sort-icon" id="sort-file_name">
+                  {% if sort_by == 'file_name' %}
+                    {% if sort_dir == 'asc' %}↑{% else %}↓{% endif %}
+                  {% else %}↕{% endif %}
+                </span>
+              </div>
+            </th>
+            <th class="col-category">
+              <div class="th-content" onclick="sortTable('department')">
+                CATEGORY
+                <span class="sort-icon" id="sort-department">
+                  {% if sort_by == 'department' %}
+                    {% if sort_dir == 'asc' %}↑{% else %}↓{% endif %}
+                  {% else %}↕{% endif %}
+                </span>
+              </div>
+            </th>
+            {% if admin_mode %}
+            <th class="col-uploaded-by">
+              <div class="th-content">
+                UPLOADED BY
+              </div>
+            </th>
+            <th class="col-uploaded-at">
+              <div class="th-content" onclick="sortTable('uploaded_at')">
+                UPLOADED AT
+                <span class="sort-icon" id="sort-uploaded_at">
+                  {% if sort_by == 'uploaded_at' %}
+                    {% if sort_dir == 'asc' %}↑{% else %}↓{% endif %}
+                  {% else %}↕{% endif %}
+                </span>
+              </div>
+            </th>
+            <th class="col-actions">ACTIONS</th>
+            {% else %}
+            <th class="col-rows">
+              <div class="th-content" onclick="sortTable('row_count')">
+                TOTAL ROWS
+                <span class="sort-icon" id="sort-row_count">
+                  {% if sort_by == 'row_count' %}
+                    {% if sort_dir == 'asc' %}↑{% else %}↓{% endif %}
+                  {% else %}↕{% endif %}
+                </span>
+              </div>
+            </th>
+            <th class="col-duplicates">
+              <div class="th-content" onclick="sortTable('duplicate_records')">
+                DUPLICATES
+                <span class="sort-icon" id="sort-duplicate_records">
+                  {% if sort_by == 'duplicate_records' %}
+                    {% if sort_dir == 'asc' %}↑{% else %}↓{% endif %}
+                  {% else %}↕{% endif %}
+                </span>
+              </div>
+            </th>
+            <th class="col-actions">ACTIONS</th>
+            {% endif %}
+          </tr>
+        </thead>
+        <tbody>
+          {% for ds in datasets %}
+          <tr data-id="{{ ds.id }}" id="row-{{ ds.id }}">
+            {% if not admin_mode %}
+            <td class="col-check" onclick="event.stopPropagation()">
+              <label class="custom-checkbox">
+                <input type="checkbox" class="row-checkbox" value="{{ ds.id }}" onchange="onRowCheck()">
+                <span class="checkmark"></span>
+              </label>
+            </td>
+            {% endif %}
+            <td class="col-filename">
+            <a href="/view/{{ ds.id }}" class="filename-cell filename-link" title="{{ ds.file_name }}">
+           <span class="file-icon">📄</span>
+           <span class="filename-text">{{ ds.file_name }}</span>
+           </a>
+           </td>
+            <td class="col-category">
+              {% if admin_mode %}
+              <span class="category-badge-static">{{ ds.department or 'None' }}</span>
+              {% else %}
+              <button class="category-inline-btn"
+                onclick="openChangeCategoryModal({{ ds.id }}, '{{ ds.file_name | replace("'", "\\'") }}', '{{ ds.department or '' }}')"
+                title="Change category">
+                <span class="category-badge">{{ ds.department or 'None' }}</span>
+                <svg class="cat-arrow" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                  <polyline points="6 9 12 15 18 9"/>
+                </svg>
+              </button>
+              {% endif %}
+            </td>
+            {% if admin_mode %}
+            <td class="col-uploaded-by">
+              <span class="uploaded-by-text">{{ ds.owner.username if ds.owner else 'Unknown' }}</span>
+            </td>
+            <td class="col-uploaded-at">
+              <span class="date-text">{{ ds.uploaded_at.strftime('%Y-%m-%d') if ds.uploaded_at else 'N/A' }}</span>
+            </td>
+            <td class="col-actions">
+              <div class="actions-group">
+                <a href="/dataset/{{ ds.id }}/relations" class="action-btn relations-btn" title="Duplicate records">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+                    <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+                  </svg>
+                  <span class="action-label"></span>
+                </a>
+              </div>
+            </td>
+            {% else %}
+            <td class="col-rows">
+              <span class="number-value">{{ '{:,}'.format(ds.row_count or 0) }}</span>
+            </td>
+            <td class="col-duplicates">
+              {% if ds.duplicate_records and ds.duplicate_records > 0 %}
+                <span class="duplicate-badge warning">{{ ds.duplicate_records }}</span>
+              {% else %}
+                <span class="duplicate-badge clean">0</span>
+              {% endif %}
+            </td>
+            <td class="col-actions">
+              <div class="actions-group">
+                <a href="/dataset/{{ ds.id }}/relations" class="action-btn relations-btn" title="Relations">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+                    <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+                  </svg>
+                  <span class="action-label"></span>
+                </a>
+                <form method="POST" action="/delete/{{ ds.id }}" style="display:inline;" onsubmit="return confirm('Delete {{ ds.file_name }}?')">
+                  <button type="submit" class="action-btn delete-btn" title="Delete">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <polyline points="3 6 5 6 21 6"/>
+                      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                    </svg>
+                    <span class="action-label"></span>
+                  </button>
+                </form>
+              </div>
+            </td>
+            {% endif %}
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+
+      <!-- ── Pagination ── -->
+      {% if total_pages > 1 %}
+      <div class="pagination">
+        <div class="pagination-info">
+          Page {{ page }} of {{ total_pages }}
+        </div>
+        <div class="pagination-buttons">
+          {% if page > 1 %}
+          <a href="?page={{ page - 1 }}&q={{ q }}&category={{ category }}&from_date={{ from_date }}&to_date={{ to_date }}&min_rows={{ min_rows }}&max_rows={{ max_rows }}&has_duplicates={{ has_duplicates }}&sort_by={{ sort_by }}&sort_dir={{ sort_dir }}" class="page-btn">← Prev</a>
+          {% endif %}
+          {% for p in range(1, total_pages + 1) %}
+            {% if p == page %}
+              <span class="page-btn active">{{ p }}</span>
+            {% elif p == 1 or p == total_pages or (p >= page - 2 and p <= page + 2) %}
+              <a href="?page={{ p }}&q={{ q }}&category={{ category }}&from_date={{ from_date }}&to_date={{ to_date }}&min_rows={{ min_rows }}&max_rows={{ max_rows }}&has_duplicates={{ has_duplicates }}&sort_by={{ sort_by }}&sort_dir={{ sort_dir }}" class="page-btn">{{ p }}</a>
+            {% elif p == page - 3 or p == page + 3 %}
+              <span class="page-btn dots">…</span>
+            {% endif %}
+          {% endfor %}
+          {% if page < total_pages %}
+          <a href="?page={{ page + 1 }}&q={{ q }}&category={{ category }}&from_date={{ from_date }}&to_date={{ to_date }}&min_rows={{ min_rows }}&max_rows={{ max_rows }}&has_duplicates={{ has_duplicates }}&sort_by={{ sort_by }}&sort_dir={{ sort_dir }}" class="page-btn">Next →</a>
+          {% endif %}
+        </div>
+      </div>
+      {% endif %}
+
+      {% else %}
+      <!-- Empty state -->
+      <div class="empty-state">
+        <div style="font-size:64px; margin-bottom:16px;">📂</div>
+        <h3 style="font-size:20px; font-weight:700; color:#1f2937; margin-bottom:8px;">No datasets found</h3>
+        <p style="color:#6b7280; margin-bottom:24px;">
+          {% if q or category or from_date or to_date or min_rows or max_rows or has_duplicates %}
+            No datasets match your filters. <a href="/dashboard" style="color:#667eea;">Clear filters</a>
+          {% else %}
+            Upload your first dataset to get started.
+          {% endif %}
+        </p>
+        <a href="/cross-relations" class="rel-btn" style="margin-top:auto; display:block; text-align:center;">
+        🔗 Cross-File Relations
+       </a>
+        <a href="/upload" class="btn-primary">Upload Dataset</a>
+      </div>
+      {% endif %}
+
+    </div><!-- /table-wrapper -->
+  </div><!-- /dashboard-card -->
+</div>
+
+<!-- ── Change Category Modal ── -->
+<div class="modal" id="changeCategoryModal">
+  <div class="modal-overlay" onclick="closeChangeCategoryModal()"></div>
+  <div class="modal-dialog modal-sm">
+    <div class="modal-header">
+      <h3>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#667eea" stroke-width="2" style="margin-right:6px;">
+          <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+        </svg>
+        Change Category
+      </h3>
+      <button class="modal-close" onclick="closeChangeCategoryModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:13px; color:#6b7280; margin-bottom:16px;" id="changeCatFileName"></p>
+      <div class="form-group">
+        <label>Select Category</label>
+        <select id="changeCatSelect" class="form-input">
+          <option value="">— None —</option>
+          {% for cat in categories %}
+          <option value="{{ cat.name }}">{{ cat.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn-secondary" onclick="closeChangeCategoryModal()">Cancel</button>
+      <button type="button" class="btn-primary" onclick="submitChangeCategory()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="20 6 9 17 4 12"/>
+        </svg>
+        Save
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Delete Confirm Modal ── -->
+<div class="modal" id="deleteModal">
+  <div class="modal-overlay" onclick="closeDeleteModal()"></div>
+  <div class="modal-dialog modal-sm">
+    <div class="modal-header">
+      <h3 style="color:#dc2626;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="2" style="margin-right:6px;">
+          <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+        </svg>
+        Delete Dataset
+      </h3>
+      <button class="modal-close" onclick="closeDeleteModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <p style="color:#374151; font-size:15px;">Are you sure you want to delete:</p>
+      <p style="font-weight:700; color:#1f2937; margin-top:8px; word-break:break-all;" id="deleteFileName"></p>
+      <p style="color:#ef4444; font-size:13px; margin-top:12px;">This action cannot be undone.</p>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn-secondary" onclick="closeDeleteModal()">Cancel</button>
+      <button type="button" id="confirmDeleteBtn"
+              style="background:#dc2626; color:white; border:none; padding:12px 24px; border-radius:8px; font-size:14px; font-weight:600; cursor:pointer;"
+              onclick="executeDelete()">
+        Delete
+      </button>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block js %}
+<script>
+// ── Filter panel toggle ────────────────────────────────────────────────────
+function toggleFilter() {
+  const panel = document.getElementById('filterPanel');
+  const btn   = document.getElementById('filterBtn');
+  panel.classList.toggle('show');
+  btn.classList.toggle('active');
+}
+
+// ── Sort ──────────────────────────────────────────────────────────────────
+const currentSort = "{{ sort_by }}";
+const currentDir  = "{{ sort_dir }}";
+
+function sortTable(col) {
+  const params = new URLSearchParams(window.location.search);
+  // Toggle direction if same column, else default asc
+  const newDir = (params.get('sort_by') === col && params.get('sort_dir') === 'asc') ? 'desc' : 'asc';
+  params.set('sort_by', col);
+  params.set('sort_dir', newDir);
+  params.set('page', '1');
+  window.location.search = params.toString();
+}
+
+// Highlight active sort icon
+document.addEventListener('DOMContentLoaded', () => {
+  if (currentSort) {
+    const icon = document.getElementById('sort-' + currentSort);
+    if (icon) {
+      icon.style.opacity = '1';
+      icon.style.color = '#667eea';
+      icon.style.fontWeight = '700';
+    }
+  }
+});
+
+// ── Change Category Modal ─────────────────────────────────────────────────
+let _changeCatDatasetId = null;
+
+function openChangeCategoryModal(datasetId, fileName, currentCat) {
+  _changeCatDatasetId = datasetId;
+  document.getElementById('changeCatFileName').textContent = '📄 ' + fileName;
+  const sel = document.getElementById('changeCatSelect');
+  sel.value = currentCat || '';
+  document.getElementById('changeCategoryModal').classList.add('show');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeChangeCategoryModal() {
+  document.getElementById('changeCategoryModal').classList.remove('show');
+  document.body.style.overflow = '';
+  _changeCatDatasetId = null;
+}
+
+async function submitChangeCategory() {
+  if (!_changeCatDatasetId) return;
+  const cat = document.getElementById('changeCatSelect').value;
+  const formData = new FormData();
+  formData.append('category', cat);
+
+  try {
+    const res = await fetch(`/dataset/${_changeCatDatasetId}/change-category`, {
+      method: 'POST',
+      body: formData
+    });
+    const data = await res.json();
+    if (data.success) {
+      closeChangeCategoryModal();
+      location.reload();
+    } else {
+      alert('Error: ' + (data.error || 'Failed to update category'));
+    }
+  } catch (err) {
+    alert('Error: ' + err.message);
+  }
+}
+
+// ── Delete Modal ──────────────────────────────────────────────────────────
+let _deleteDatasetId = null;
+
+function confirmDelete(datasetId, fileName) {
+  _deleteDatasetId = datasetId;
+  document.getElementById('deleteFileName').textContent = fileName;
+  document.getElementById('deleteModal').classList.add('show');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeDeleteModal() {
+  document.getElementById('deleteModal').classList.remove('show');
+  document.body.style.overflow = '';
+  _deleteDatasetId = null;
+}
+
+async function executeDelete() {
+  if (!_deleteDatasetId) return;
+  try {
+    const res = await fetch(`/dataset/${_deleteDatasetId}/delete`, { method: 'POST' });
+    const data = await res.json();
+    if (data.success) {
+      closeDeleteModal();
+      location.reload();
+    } else {
+      alert('Error: ' + (data.error || 'Failed to delete'));
+    }
+  } catch (err) {
+    alert('Error: ' + err.message);
+  }
+}
+</script>
+
+<style>
+/* Extra action button colours */
+.view-btn     { color: #0891b2; border-color: #cffafe; }
+.view-btn:hover { background: #ecfeff; border-color: #0891b2; color: #0891b2; }
+.link-btn     { color: #9333ea; border-color: #f3e8ff; }
+.link-btn:hover { background: #faf5ff; border-color: #9333ea; }
+.delete-btn   { color: #dc2626; border-color: #fee2e2; }
+.delete-btn:hover { background: #fef2f2; border-color: #dc2626; }
+.empty-state  { text-align:center; padding:60px 24px; }
+.sort-icon    { opacity: 0.35; font-size:13px; transition: all 0.15s; }
+.th-content:hover .sort-icon { opacity: 1; }
+
+/* Inline category arrow button */
+.category-inline-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: 6px;
+  transition: background 0.15s;
+}
+.category-inline-btn:hover {
+  background: rgba(102,126,234,0.08);
+}
+.category-inline-btn:hover .category-badge {
+  background: linear-gradient(135deg, #c7d2fe 0%, #bfdbfe 100%);
+}
+.cat-arrow {
+  color: #9ca3af;
+  flex-shrink: 0;
+  transition: color 0.15s, transform 0.15s;
+}
+.category-inline-btn:hover .cat-arrow {
+  color: #667eea;
+  transform: translateY(1px);
+}
+</style>
+
+<!-- ── Bulk Delete Confirm Modal ── -->
+<div class="modal" id="bulkDeleteModal">
+  <div class="modal-overlay" onclick="closeBulkDeleteModal()"></div>
+  <div class="modal-dialog modal-sm">
+    <div class="modal-header">
+      <h3 style="color:#dc2626;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="2" style="margin-right:6px;">
+          <polyline points="3 6 5 6 21 6"/>
+          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+        </svg>
+        Bulk Delete
+      </h3>
+      <button class="modal-close" onclick="closeBulkDeleteModal()">x</button>
+    </div>
+    <div class="modal-body">
+      <div style="display:flex;align-items:center;gap:14px;padding:16px;background:#fef2f2;border-radius:10px;margin-bottom:16px;">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2">
+          <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+          <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+        </svg>
+        <div>
+          <p style="font-weight:700;color:#991b1b;margin:0 0 4px;font-size:15px;">Delete <span id="bulkDeleteCount">0</span> dataset(s)?</p>
+          <p style="color:#7f1d1d;font-size:13px;margin:0;">This action is permanent and cannot be undone.</p>
+        </div>
+      </div>
+      <div id="bulkDeleteList" style="max-height:180px;overflow-y:auto;border:1px solid #fca5a5;border-radius:8px;padding:10px 14px;background:#fff5f5;font-size:13px;color:#7f1d1d;"></div>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn-secondary" onclick="closeBulkDeleteModal()">Cancel</button>
+      <button type="button"
+        style="background:#dc2626;color:white;border:none;padding:12px 24px;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:8px;"
+        onclick="executeBulkDelete()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="3 6 5 6 21 6"/>
+          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+        </svg>
+        Delete All Selected
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─── BULK SELECT LOGIC ───────────────────────────────────────────────────────
+
+// Track selected IDs across page interactions
+const selectedIds = new Set();
+
+function getRowCheckboxes() {
+  return Array.from(document.querySelectorAll('.row-checkbox'));
+}
+
+function updateToolbar() {
+  const toolbar   = document.getElementById('bulkToolbar');
+  const countEl   = document.getElementById('bulkCount');
+  const masterCb  = document.getElementById('selectAllCheckbox');
+  const boxes     = getRowCheckboxes();
+  const checkedBoxes = boxes.filter(cb => cb.checked);
+
+  countEl.textContent = selectedIds.size + ' selected';
+  toolbar.classList.toggle('show', selectedIds.size > 0);
+
+  // Update master checkbox state
+  if (checkedBoxes.length === 0)       masterCb.indeterminate = false, masterCb.checked = false;
+  else if (checkedBoxes.length === boxes.length) masterCb.indeterminate = false, masterCb.checked = true;
+  else                                  masterCb.indeterminate = true;
+}
+
+function onRowCheck() {
+  getRowCheckboxes().forEach(cb => {
+    if (cb.checked) selectedIds.add(Number(cb.value));
+    else             selectedIds.delete(Number(cb.value));
+  });
+  // Highlight selected rows
+  getRowCheckboxes().forEach(cb => {
+    const row = cb.closest('tr');
+    row.classList.toggle('row-selected', cb.checked);
+  });
+  updateToolbar();
+}
+
+function toggleSelectAll(masterCb) {
+  getRowCheckboxes().forEach(cb => {
+    cb.checked = masterCb.checked;
+    const row = cb.closest('tr');
+    row.classList.toggle('row-selected', masterCb.checked);
+    if (masterCb.checked) selectedIds.add(Number(cb.value));
+    else                   selectedIds.delete(Number(cb.value));
+  });
+  updateToolbar();
+}
+
+function selectAllVisible() {
+  getRowCheckboxes().forEach(cb => {
+    cb.checked = true;
+    cb.closest('tr').classList.add('row-selected');
+    selectedIds.add(Number(cb.value));
+  });
+  document.getElementById('selectAllCheckbox').checked = true;
+  document.getElementById('selectAllCheckbox').indeterminate = false;
+  updateToolbar();
+}
+
+function deselectAll() {
+  getRowCheckboxes().forEach(cb => {
+    cb.checked = false;
+    cb.closest('tr').classList.remove('row-selected');
+  });
+  selectedIds.clear();
+  document.getElementById('selectAllCheckbox').checked = false;
+  document.getElementById('selectAllCheckbox').indeterminate = false;
+  updateToolbar();
+}
+
+// ─── BULK DELETE MODAL ───────────────────────────────────────────────────────
+
+function openBulkDeleteModal() {
+  if (selectedIds.size === 0) return;
+
+  document.getElementById('bulkDeleteCount').textContent = selectedIds.size;
+
+  // Build list of selected file names from DOM
+  const listEl = document.getElementById('bulkDeleteList');
+  listEl.innerHTML = '';
+  selectedIds.forEach(id => {
+    const row = document.getElementById('row-' + id);
+    const name = row ? row.querySelector('.filename-text').textContent.trim() : 'Dataset #' + id;
+    const item = document.createElement('div');
+    item.style.cssText = 'display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid #fecaca;';
+    item.innerHTML = '<span style="font-size:16px;">\u{1F4C4}</span><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + name + '</span>';
+    listEl.appendChild(item);
+  });
+  if (listEl.lastChild) listEl.lastChild.style.borderBottom = 'none';
+
+  document.getElementById('bulkDeleteModal').classList.add('show');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeBulkDeleteModal() {
+  document.getElementById('bulkDeleteModal').classList.remove('show');
+  document.body.style.overflow = '';
+}
+
+async function executeBulkDelete() {
+  if (selectedIds.size === 0) return;
+
+  const btn = document.querySelector('#bulkDeleteModal button[onclick="executeBulkDelete()"]');
+  btn.disabled = true;
+  btn.textContent = 'Deleting...';
+
+  try {
+    const res = await fetch('/dataset/bulk-delete', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ids: Array.from(selectedIds) })
+    });
+    const data = await res.json();
+    if (data.success) {
+      closeBulkDeleteModal();
+      location.reload();
+    } else {
+      alert('Error: ' + (data.error || 'Bulk delete failed'));
+      btn.disabled = false;
+      btn.textContent = 'Delete All Selected';
+    }
+  } catch (err) {
+    alert('Error: ' + err.message);
+    btn.disabled = false;
+    btn.textContent = 'Delete All Selected';
+  }
+}
+</script>
+
+<style>
+/* ── Admin table column widths ────────────────────────────────────────────── */
+.col-uploaded-by  { width: 120px; min-width: 100px; white-space: nowrap; }
+.col-uploaded-at  { width: 130px; min-width: 110px; white-space: nowrap; }
+.col-actions      { width: 120px; min-width: 100px; white-space: nowrap; }
+
+/* ── Checkbox Styles ──────────────────────────────────────────────────────── */
+.col-check {
+  width: 48px;
+  min-width: 48px;
+  text-align: center;
+  padding: 0 8px !important;
+}
+
+.custom-checkbox {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  position: relative;
+  width: 20px;
+  height: 20px;
+}
+
+.custom-checkbox input[type="checkbox"] {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+  cursor: pointer;
+}
+
+.custom-checkbox .checkmark {
+  width: 18px;
+  height: 18px;
+  border: 2px solid #d1d5db;
+  border-radius: 5px;
+  background: white;
+  transition: all 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.custom-checkbox input:checked ~ .checkmark {
+  background: #667eea;
+  border-color: #667eea;
+}
+
+.custom-checkbox input:indeterminate ~ .checkmark {
+  background: #667eea;
+  border-color: #667eea;
+}
+
+.custom-checkbox .checkmark::after {
+  content: "";
+  display: none;
+  width: 5px;
+  height: 9px;
+  border: 2px solid white;
+  border-top: none;
+  border-left: none;
+  transform: rotate(45deg) translate(-1px, -1px);
+}
+
+.custom-checkbox input:checked ~ .checkmark::after {
+  display: block;
+}
+
+.custom-checkbox input:indeterminate ~ .checkmark::after {
+  display: block;
+  width: 8px;
+  height: 0;
+  border: 2px solid white;
+  border-right: none;
+  border-bottom: none;
+  transform: none;
+  margin: auto;
+}
+
+/* Row selected highlight */
+.row-selected td {
+  background: #f0f0ff !important;
+}
+
+.row-selected {
+  border-left: 3px solid #667eea !important;
+}
+
+/* ── Bulk Toolbar ──────────────────────────────────────────────────────────── */
+.bulk-toolbar {
+  display: none;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 28px;
+  background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%);
+  border-bottom: 2px solid #4f46e5;
+  animation: slideDown 0.2s ease-out;
+}
+
+.bulk-toolbar.show {
+  display: flex;
+}
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.bulk-toolbar-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.bulk-count {
+  font-size: 14px;
+  font-weight: 700;
+  color: white;
+  background: rgba(255,255,255,0.15);
+  padding: 5px 14px;
+  border-radius: 20px;
+}
+
+.bulk-select-all-btn,
+.bulk-deselect-btn {
+  background: transparent;
+  border: 1px solid rgba(255,255,255,0.3);
+  color: rgba(255,255,255,0.85);
+  font-size: 13px;
+  font-weight: 500;
+  padding: 6px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.bulk-select-all-btn:hover,
+.bulk-deselect-btn:hover {
+  background: rgba(255,255,255,0.15);
+  color: white;
+  border-color: rgba(255,255,255,0.6);
+}
+
+.bulk-delete-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 22px;
+  background: #ef4444;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 4px 12px rgba(239,68,68,0.4);
+}
+
+.bulk-delete-btn:hover {
+  background: #dc2626;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(239,68,68,0.5);
+}
+</style>
+{% endblock %}

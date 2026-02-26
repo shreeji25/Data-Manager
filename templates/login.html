@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+
+{% block title %}Login{% endblock %}
+
+{% block css %}
+<link rel="stylesheet" href="/static/css/auth.css">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=Sora:wght@400;600;700&display=swap" rel="stylesheet">
+{% endblock %}
+
+{% block content %}
+<div class="auth-page">
+
+  <!-- Left panel: branding -->
+  <div class="auth-left">
+    <div class="auth-left-inner">
+      <div class="auth-brand">
+        <div class="auth-brand-icon">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <polyline points="14 2 14 8 20 8"/>
+            <line x1="16" y1="13" x2="8" y2="13"/>
+            <line x1="16" y1="17" x2="8" y2="17"/>
+            <polyline points="10 9 9 9 8 9"/>
+          </svg>
+        </div>
+        <span class="auth-brand-name">Data Manager</span>
+      </div>
+
+      <div class="auth-left-content">
+        <h1 class="auth-left-title">Welcome<br>back.</h1>
+        <p class="auth-left-sub">Sign in to continue managing your datasets, detecting duplicates, and exporting clean data.</p>
+        <div class="auth-features">
+          <div class="auth-feature"><div class="auth-feature-dot"></div><span>Automatic duplicate detection</span></div>
+          <div class="auth-feature"><div class="auth-feature-dot"></div><span>Phone &amp; email cross-matching</span></div>
+          <div class="auth-feature"><div class="auth-feature-dot"></div><span>Clean &amp; export in one click</span></div>
+        </div>
+      </div>
+
+      <div class="auth-left-footer">Secure · Private · Fast</div>
+    </div>
+  </div>
+
+  <!-- Right panel: form -->
+  <div class="auth-right">
+    <div class="auth-form-wrap">
+
+      <div class="auth-form-header">
+        <h2 class="auth-form-title">Sign in to your account</h2>
+        <p class="auth-form-sub">Don't have one? <a href="/register">Create account →</a></p>
+      </div>
+
+      {% if error %}
+      <div class="auth-alert">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+        </svg>
+        {{ error }}
+      </div>
+      {% endif %}
+
+      <form method="POST" action="/login" class="auth-form">
+
+        <div class="auth-field">
+          <label for="username">Username or Email</label>
+          <div class="auth-input-wrap">
+            <svg class="auth-input-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+            </svg>
+            <input type="text" id="username" name="username"
+                   placeholder="Enter username or email"
+                   required autofocus autocomplete="username">
+          </div>
+        </div>
+
+        <div class="auth-field">
+          <div class="auth-field-labelrow">
+            <label for="password">Password</label>
+          </div>
+          <div class="auth-input-wrap">
+            <svg class="auth-input-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+            </svg>
+            <input type="password" id="password" name="password"
+                   placeholder="Enter your password"
+                   required autocomplete="current-password">
+          </div>
+        </div>
+
+        <div class="auth-remember">
+          <label class="auth-checkbox-wrap">
+            <input type="checkbox" name="remember" id="remember">
+            <span class="auth-checkmark"></span>
+            <span class="auth-checkbox-label">Remember me</span>
+          </label>
+        </div>
+
+        <button type="submit" class="auth-submit">
+          <span>Sign In</span>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <path d="M5 12h14M12 5l7 7-7 7"/>
+          </svg>
+        </button>
+
+      </form>
+
+    </div>
+  </div>
+</div>
+{% endblock %}

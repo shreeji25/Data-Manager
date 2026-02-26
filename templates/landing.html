@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Data Manager — Welcome</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/css/landing.css">
+</head>
+<body>
+
+<!-- NAVBAR -->
+<nav class="lp-nav">
+  <div class="lp-nav-logo">
+    <div class="lp-logo-box">📋</div>
+    Data Manager
+  </div>
+  <div class="lp-nav-links">
+    <a href="#features" class="lp-nav-link">Features</a>
+    <a href="#files" class="lp-nav-link">File Support</a>
+    <a href="/login" class="lp-nav-cta">Sign In →</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="lp-hero" id="home">
+  <div class="lp-hero-grid"></div>
+  <div class="lp-hero-deco-1"></div>
+  <div class="lp-hero-deco-2"></div>
+
+  <div class="lp-hero-inner">
+    <div class="lp-hero-content">
+      <div class="lp-eyebrow">Multi-Tenant Dataset Management</div>
+      <h1 class="lp-hero-title">
+        Clean Data.<br>
+        <span class="lp-accent">Zero Duplicates.</span><br>
+        One Platform.
+      </h1>
+      <p class="lp-hero-desc">
+        Upload your Excel &amp; CSV files, auto-detect duplicate contacts, fix headers,
+        and export clean data — all in one secure, role-based workspace built for your team.
+      </p>
+      <div class="lp-hero-actions">
+        <a href="/login" class="lp-btn-primary">Get Started &nbsp;→</a>
+        <a href="#features" class="lp-btn-secondary">See features ↓</a>
+      </div>
+      <div class="lp-hero-stats">
+        <div class="lp-stat">
+          <div class="lp-stat-num">3</div>
+          <div class="lp-stat-label">File Formats</div>
+        </div>
+        <div class="lp-stat-divider"></div>
+        <div class="lp-stat">
+          <div class="lp-stat-num">3</div>
+          <div class="lp-stat-label">Dup Modes</div>
+        </div>
+        <div class="lp-stat-divider"></div>
+        <div class="lp-stat">
+          <div class="lp-stat-num">2</div>
+          <div class="lp-stat-label">User Roles</div>
+        </div>
+        <div class="lp-stat-divider"></div>
+        <div class="lp-stat">
+          <div class="lp-stat-num">20+</div>
+          <div class="lp-stat-label">API Routes</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CORE FEATURES -->
+<div class="lp-section-bg" id="features">
+  <div class="lp-section">
+    <div class="lp-section-eyebrow">Core Features</div>
+    <h2 class="lp-section-title">Everything your team needs<br>to manage data cleanly</h2>
+    <p class="lp-section-sub">Six powerful capabilities built into every account — no plugins, no setup, ready the moment you log in.</p>
+
+    <div class="lp-features-grid">
+
+      <div class="lp-feat-card">
+        <div class="lp-feat-icon">📤</div>
+        <div class="lp-feat-name">Smart File Upload</div>
+        <div class="lp-feat-desc">CSV, XLSX, XLS accepted with 1 MB chunked streaming. Files over 20 MB process in background — no timeout, no RAM crash, no waiting.</div>
+      </div>
+
+      <div class="lp-feat-card">
+        <div class="lp-feat-icon">🔍</div>
+        <div class="lp-feat-name">Duplicate Detection</div>
+        <div class="lp-feat-desc">Three strict modes: Combined (phone + email), Phone-only, and Email-only. Mutually exclusive partitioning — no double-counting across groups.</div>
+      </div>
+
+      <div class="lp-feat-card">
+        <div class="lp-feat-icon">🔧</div>
+        <div class="lp-feat-name">Header Auto-Correction</div>
+        <div class="lp-feat-desc">Detects 4 header problems — missing headers, email/phone as column name, or blank columns — and shows a guided correction page before saving.</div>
+      </div>
+
+      <div class="lp-feat-card">
+        <div class="lp-feat-icon">📂</div>
+        <div class="lp-feat-name">Category Management</div>
+        <div class="lp-feat-desc">Personal categories per user with create, rename, and delete. Filter your entire dataset list by category in one click from the sidebar.</div>
+      </div>
+
+      <div class="lp-feat-card">
+        <div class="lp-feat-icon">⬇️</div>
+        <div class="lp-feat-name">Clean &amp; Export</div>
+        <div class="lp-feat-desc">Download a deduplicated CSV instantly — all combined-duplicate rows removed. Ready for CRM import, email campaigns, or further analysis.</div>
+      </div>
+
+      <div class="lp-feat-card">
+        <div class="lp-feat-icon">🛡️</div>
+        <div class="lp-feat-name">Role-Based Access</div>
+        <div class="lp-feat-desc">Admins can impersonate any employee and view their full dataset. Employees are completely isolated — they only see their own uploads.</div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- FILE SUPPORT -->
+<section class="lp-file-section" id="files">
+  <div class="lp-file-deco-1"></div>
+  <div class="lp-file-deco-2"></div>
+  <div class="lp-file-inner">
+    <div class="lp-file-left">
+      <div class="lp-section-eyebrow lp-eyebrow-light">File Support</div>
+      <h2 class="lp-section-title lp-title-white">Works with the files<br>you already have</h2>
+      <p class="lp-section-sub lp-sub-light">No conversion needed. Upload straight from Excel or your database — Data Manager handles all three formats natively with chunked streaming for any size.</p>
+    </div>
+    <div class="lp-file-pills">
+
+      <div class="lp-file-pill">
+        <div class="lp-ext-box lp-ext-csv">.CSV</div>
+        <div class="lp-file-info">
+          <div class="lp-file-name">Comma-Separated Values</div>
+          <div class="lp-file-desc">Universal format · Any delimiter · Any size</div>
+        </div>
+        <div class="lp-file-tag">Any size</div>
+      </div>
+
+      <div class="lp-file-pill">
+        <div class="lp-ext-box lp-ext-xlsx">.XLSX</div>
+        <div class="lp-file-info">
+          <div class="lp-file-name">Excel 2007+ Workbook</div>
+          <div class="lp-file-desc">Modern Excel format · Multi-sheet · Natively parsed</div>
+        </div>
+        <div class="lp-file-tag">Any size</div>
+      </div>
+
+      <div class="lp-file-pill">
+        <div class="lp-ext-box lp-ext-xls">.XLS</div>
+        <div class="lp-file-info">
+          <div class="lp-file-name">Excel Legacy Format</div>
+          <div class="lp-file-desc">Older Excel files · Fully supported · No conversion</div>
+        </div>
+        <div class="lp-file-tag">Any size</div>
+      </div>
+
+      <div class="lp-file-pill lp-file-pill-dim">
+        <div class="lp-ext-box lp-ext-large">≥20<br>MB</div>
+        <div class="lp-file-info">
+          <div class="lp-file-name lp-dim-name">Large Files</div>
+          <div class="lp-file-desc">Background async processing — no UI freeze, no timeout</div>
+        </div>
+        <div class="lp-file-tag">Background</div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="lp-cta-section">
+  <div class="lp-cta-inner">
+    <h2 class="lp-cta-title">Ready to clean<br>your data?</h2>
+    <p class="lp-cta-sub">Sign in with your account to start uploading datasets, detecting duplicates, and exporting clean files — in minutes.</p>
+    <a href="/login" class="lp-cta-btn">Get Started &nbsp;→</a>
+    <p class="lp-cta-note">SECURE · PRIVATE · FAST</p>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer class="lp-footer">
+  <div class="lp-footer-logo">
+    <div class="lp-logo-box" style="width:28px;height:28px;font-size:13px;">📋</div>
+    Data Manager
+  </div>
+  <div class="lp-footer-note">FastAPI + SQLAlchemy + Jinja2</div>
+  <div class="lp-footer-tags">
+    <span class="lp-footer-tag">v1.0</span>
+    <span class="lp-footer-tag">Uvicorn</span>
+    <span class="lp-footer-tag">Multi-Tenant</span>
+  </div>
+</footer>
+
+<script src="/static/js/landing.js"></script>
+</body>
+</html>

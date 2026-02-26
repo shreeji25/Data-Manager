@@ -1,0 +1,913 @@
+/* ================================================================
+   view.css — FIXED LAYOUT (Like Relation Page)
+   Only table area scrolls, everything else is fixed
+   Layout logic:
+     html/body = viewport container (no scroll)
+     .view-page = flex column filling body
+       ├── header card     → static, never scrolls
+       ├── stats container → static, never scrolls  
+       ├── table card      → fills remaining space, clips overflow
+       │     └── table-scroll → ONLY this element scrolls
+       └── pagination      → static, always visible at bottom
+   ================================================================ */
+
+
+/* ── 1. VIEWPORT LOCK ──────────────────────────────────────── */
+html,
+body {
+    height: 100% !important;
+    overflow: hidden !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+body {
+    display: flex !important;
+    flex-direction: column !important;
+}
+
+
+/* ── 2. PAGE WRAPPER ──────────────────────────────────────── */
+.view-page {
+    height: 100% !important;
+    display: flex !important;
+    flex-direction: column !important;
+    overflow: hidden !important;
+    padding: 14px 20px 0 20px !important;
+    gap: 8px !important;
+    box-sizing: border-box !important;
+}
+
+
+/* ── 3. GENERIC CARD ──────────────────────────────────────── */
+.view-page > .card {
+    background: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+    border: none;
+    flex-shrink: 0;
+    box-sizing: border-box;
+}
+
+
+/* ── 4. HEADER CARD (static) ──────────────────────────────── */
+.view-header-card {
+    flex-shrink: 0 !important;
+    flex-grow: 0 !important;
+    border-left: 6px solid #2563eb !important;
+    background: linear-gradient(to right, #f0f7ff, #ffffff 65%) !important;
+    padding: 16px 20px !important;
+    border-radius: 12px !important;
+    z-index: 10 !important;
+    position: relative !important;
+}
+
+.view-header {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    margin: 0 !important;
+}
+
+.dataset-title {
+    font-size: 18px !important;
+    font-weight: 600 !important;
+    margin: 0 !important;
+    color: #111827 !important;
+}
+
+.view-actions {
+    display: flex !important;
+    gap: 8px !important;
+    flex-wrap: wrap !important;
+}
+
+.view-actions .btn,
+.view-actions .btn-secondary {
+    padding: 9px 16px !important;
+    background: #2563eb !important;
+    color: white !important;
+    border: none !important;
+    border-radius: 8px !important;
+    font-size: 13px !important;
+    font-weight: 500 !important;
+    text-decoration: none !important;
+    cursor: pointer !important;
+    transition: background 0.2s !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+}
+
+.view-actions .btn:hover,
+.view-actions .btn-secondary:hover {
+    background: #1d4ed8 !important;
+}
+
+
+/* ── 5. STATS CONTAINER (static) ──────────────────────────── */
+.stats-container {
+    flex-shrink: 0 !important;
+    flex-grow: 0 !important;
+    display: flex !important;
+    gap: 10px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    z-index: 9 !important;
+    position: relative !important;
+}
+
+.stats-container a {
+    flex: 1 !important;
+    text-decoration: none !important;
+    display: flex !important;
+}
+
+.stat-card {
+    flex: 1 !important;
+    background: #ffffff !important;
+    border-radius: 10px !important;
+    padding: 12px 16px !important;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05) !important;
+    border-left: 4px solid #e5e7eb !important;
+    display: flex !important;
+    flex-direction: column !important;
+    transition: all 0.2s !important;
+    cursor: pointer !important;
+    min-width: 0 !important;
+}
+
+.stat-card.danger {
+    border-left: 4px solid #ef4444 !important;
+}
+
+.stat-card:hover {
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1) !important;
+    transform: translateY(-2px) !important;
+}
+
+.stat-label {
+    font-size: 11px !important;
+    color: #6b7280 !important;
+    text-transform: uppercase !important;
+    font-weight: 600 !important;
+    letter-spacing: 0.05em !important;
+    margin-bottom: 4px !important;
+}
+
+.stat-value {
+    font-size: 20px !important;
+    font-weight: 700 !important;
+    color: #111827 !important;
+}
+
+
+/* ── 6. TABLE CARD (scrollable) ───────────────────────────── */
+.view-table-card {
+    flex: 1 1 auto !important;
+    min-height: 200px !important;
+    max-height: calc(100vh - 350px) !important;
+    display: flex !important;
+    flex-direction: column !important;
+    overflow: hidden !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    border-radius: 12px !important;
+    background: #ffffff !important;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.07) !important;
+}
+
+
+/* ── 7. TABLE SCROLL ──────────────────────────────────────── */
+.view-table-scroll {
+    flex: 1 1 auto !important;
+    height: 100% !important;
+    overflow-y: auto !important;
+    overflow-x: auto !important;
+    position: relative !important;
+    border-radius: 12px !important;
+}
+
+.view-table-scroll::-webkit-scrollbar {
+    width: 8px !important;
+    height: 8px !important;
+}
+
+.view-table-scroll::-webkit-scrollbar-track {
+    background: #f8f9fa !important;
+    border-radius: 0 12px 12px 0 !important;
+}
+
+.view-table-scroll::-webkit-scrollbar-thumb {
+    background: #cbd5e1 !important;
+    border-radius: 4px !important;
+}
+
+.view-table-scroll::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8 !important;
+}
+
+
+/* ── 8. TABLE ─────────────────────────────────────────────── */
+.view-table {
+    width: 100% !important;
+    min-width: max-content !important;
+    border-collapse: separate !important;
+    border-spacing: 0 !important;
+    table-layout: fixed !important; /* Fixed for column resizing */
+    position: relative !important;
+}
+
+.view-table thead {
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 3 !important;
+    background: #f8fafc !important;
+}
+
+.view-table thead th {
+    position: sticky !important;
+    top: 0 !important;
+    background: #2563eb !important;
+    color: white !important;
+    padding: 12px 28px 12px 14px !important;  /* right padding for handle */
+    font-size: 13px !important;
+    font-weight: 600 !important;
+    text-transform: uppercase !important;
+    text-align: left !important;              /* LEFT aligned */
+    white-space: nowrap !important;
+    border-bottom: 2px solid #1e40af !important;
+    border-right: 1px solid rgba(255,255,255,0.15) !important;
+    z-index: 3 !important;
+    letter-spacing: 0.05em !important;
+    min-width: 80px;
+    width: 160px;
+    position: relative !important;
+    cursor: default !important;
+    user-select: none !important;
+    overflow: visible !important;
+}
+
+.view-table thead th:last-child {
+    border-right: none !important;
+}
+
+/* Active resize state — highlight the column being dragged */
+.view-table thead th.resizing {
+    background: #1d4ed8 !important;
+}
+
+/* ── Resize handle (grip icon at right edge of each th) ──── */
+.col-resize-handle {
+    position: absolute !important;
+    top: 0 !important;
+    right: 0 !important;
+    width: 18px !important;
+    height: 100% !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    cursor: col-resize !important;
+    z-index: 5 !important;
+    opacity: 0.4 !important;
+    transition: opacity 0.15s, background 0.15s !important;
+    border-left: 1px solid rgba(255,255,255,0.25) !important;
+}
+
+.col-resize-handle:hover {
+    opacity: 1 !important;
+    background: rgba(255,255,255,0.15) !important;
+}
+
+.col-resize-grip {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    color: rgba(255,255,255,0.9) !important;
+    pointer-events: none !important;
+}
+
+.view-table tbody tr {
+    border-bottom: 1px solid #f1f5f9 !important;
+    transition: background 0.12s !important;
+}
+
+.view-table tbody tr:hover {
+    background: #f9fafb !important;
+}
+
+.view-table tbody tr:last-child {
+    border-bottom: none !important;
+}
+
+.view-table tbody td {
+    padding: 12px 14px !important;
+    font-size: 14px !important;
+    text-align: left !important;              /* LEFT aligned */
+    background: white !important;
+    border-bottom: 1px solid #e5e7eb !important;
+    white-space: nowrap !important;
+    color: #1f2937 !important;
+    vertical-align: middle !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    min-width: 80px;
+    width: 160px;
+}
+
+/* Duplicate rows */
+.view-table tr.duplicate-row td {
+    background: #fee2e2 !important;
+    color: #7f1d1d !important;
+}
+
+.view-table tr.duplicate-row td:first-child {
+    border-left: 4px solid #ef4444 !important;
+}
+
+.view-table tr.duplicate-row:hover td {
+    background: #fecaca !important;
+}
+
+
+/* ── 9. PAGINATION (static) ───────────────────────────────── */
+.pagination {
+    flex-shrink: 0 !important;
+    flex-grow: 0 !important;
+    min-height: 60px !important;
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    padding: 12px 0 16px 0 !important;
+    margin: 0 !important;
+    background: transparent !important;
+    position: relative !important;
+    z-index: 15 !important;
+}
+
+.pagination-controls {
+    display: flex !important;
+    align-items: center !important;
+    gap: 4px !important;
+    flex-wrap: wrap !important;
+    justify-content: center !important;
+}
+
+.page-btn {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    min-width: 36px !important;
+    height: 36px !important;
+    padding: 0 10px !important;
+    border: 1.5px solid #e0e7ff !important;
+    border-radius: 8px !important;
+    background: #fff !important;
+    color: #374151 !important;
+    font-size: 14px !important;
+    font-weight: 500 !important;
+    text-decoration: none !important;
+    transition: all 0.15s !important;
+    cursor: pointer !important;
+    box-sizing: border-box !important;
+}
+
+.page-btn:hover:not(.disabled):not(.dots) {
+    background: #eef2ff !important;
+    border-color: #a5b4fc !important;
+    color: #4f46e5 !important;
+}
+
+.page-btn.active {
+    background: #4f46e5 !important;
+    border-color: #4f46e5 !important;
+    color: #fff !important;
+    font-weight: 700 !important;
+    box-shadow: 0 2px 8px rgba(79,70,229,0.18) !important;
+}
+
+.page-btn.dots {
+    border-color: transparent !important;
+    background: transparent !important;
+    cursor: default !important;
+    letter-spacing: 2px !important;
+    color: #9ca3af !important;
+}
+
+.page-btn.page-nav {
+    padding: 0 14px !important;
+    font-size: 13px !important;
+    color: #4f46e5 !important;
+    border-color: #c7d2fe !important;
+}
+
+.page-btn.page-nav:hover:not(.disabled) {
+    background: #4f46e5 !important;
+    color: #fff !important;
+    border-color: #4f46e5 !important;
+}
+
+.page-btn.disabled {
+    color: #c4c4c4 !important;
+    border-color: #e5e7eb !important;
+    background: #fafafa !important;
+    cursor: not-allowed !important;
+    pointer-events: none !important;
+}
+
+
+/* ── 10. FOOTER (dashboard button) ────────────────────────── */
+.view-footer {
+    flex-shrink: 0 !important;
+    flex-grow: 0 !important;
+    min-height: 60px !important;
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    padding: 12px 0 16px 0 !important;
+    margin: 0 !important;
+    background: transparent !important;
+    position: relative !important;
+    z-index: 15 !important;
+}
+
+.btn-dashboard {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 8px !important;
+    padding: 10px 24px !important;
+    background: #f1f5f9 !important;
+    color: #475569 !important;
+    border: 1.5px solid #cbd5e1 !important;
+    border-radius: 8px !important;
+    font-size: 14px !important;
+    font-weight: 500 !important;
+    text-decoration: none !important;
+    transition: all 0.2s !important;
+    cursor: pointer !important;
+}
+
+.btn-dashboard:hover {
+    background: #e2e8f0 !important;
+    border-color: #94a3b8 !important;
+    color: #1e293b !important;
+    transform: translateY(-1px) !important;
+}
+
+.btn-dashboard svg {
+    flex-shrink: 0 !important;
+}
+
+
+/* ── 11. POINTER EVENTS ───────────────────────────────────── */
+.view-page *,
+.view-table * {
+    pointer-events: auto;
+}
+
+/* ================================================================
+   INSIGHTS SIDEBAR — Right collapsible panel
+   ================================================================ */
+
+/* Root layout wrapper */
+.view-root {
+    display: flex !important;
+    height: 100vh !important;
+    overflow: hidden !important;
+    position: relative !important;
+}
+
+/* Main content area */
+.view-main {
+    flex: 1 1 auto !important;
+    min-width: 0 !important;
+    overflow: hidden !important;
+    transition: margin-right 0.3s ease !important;
+}
+
+.view-main.sidebar-open {
+    margin-right: 320px !important;
+}
+
+/* Sidebar toggle button (in header) */
+.sidebar-toggle-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 8px 16px;
+    background: #f1f5f9;
+    border: 1.5px solid #cbd5e1;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #475569;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.sidebar-toggle-btn:hover,
+.sidebar-toggle-btn.active {
+    background: #2563eb;
+    border-color: #2563eb;
+    color: white;
+}
+
+/* Back button */
+.btn-back {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    background: #f1f5f9;
+    border: 1.5px solid #cbd5e1;
+    border-radius: 8px;
+    color: #475569;
+    text-decoration: none;
+    transition: all 0.2s;
+    flex-shrink: 0;
+}
+.btn-back:hover { background: #e2e8f0; color: #1e293b; }
+
+/* Header layout adjustments */
+.view-header-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 0;
+    flex: 1;
+}
+.view-header-right {
+    flex-shrink: 0;
+    margin-left: 16px;
+}
+.dataset-title {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Stat card variants */
+.stat-card.stat-clean { border-left-color: #16a34a !important; }
+.stat-card.stat-danger { border-left-color: #ef4444 !important; }
+.stat-card.stat-exact { border-left-color: #f59e0b !important; }
+
+/* Exact dup row highlight */
+.view-table tr.exact-dup-row td {
+    background: #fef9c3 !important;
+    color: #713f12 !important;
+}
+.view-table tr.exact-dup-row td:first-child {
+    border-left: 4px solid #f59e0b !important;
+}
+
+/* ── Sidebar itself ── */
+.insights-sidebar {
+    position: fixed !important;
+    top: 0 !important;
+    right: -320px !important;
+    width: 320px !important;
+    height: 100vh !important;
+    background: #ffffff !important;
+    border-left: 1px solid #e2e8f0 !important;
+    box-shadow: -4px 0 24px rgba(0,0,0,0.08) !important;
+    display: flex !important;
+    flex-direction: column !important;
+    z-index: 200 !important;
+    transition: right 0.3s ease !important;
+    overflow: hidden !important;
+}
+.insights-sidebar.open {
+    right: 0 !important;
+}
+
+/* Sidebar header */
+.isb-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 16px 12px;
+    border-bottom: 1px solid #f1f5f9;
+    flex-shrink: 0;
+    background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+}
+.isb-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    font-weight: 700;
+    color: #ffffff;
+}
+.isb-close {
+    background: rgba(255,255,255,0.15);
+    border: none;
+    color: #ffffff;
+    font-size: 16px;
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s;
+}
+.isb-close:hover { background: rgba(255,255,255,0.25); }
+
+/* Tabs */
+.isb-tabs {
+    display: flex;
+    gap: 2px;
+    padding: 8px 8px 0;
+    border-bottom: 1px solid #f1f5f9;
+    flex-shrink: 0;
+    background: #f8fafc;
+    overflow-x: auto;
+}
+.isb-tab {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 7px 10px;
+    border: none;
+    border-radius: 6px 6px 0 0;
+    background: transparent;
+    color: #64748b;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.15s;
+    border-bottom: 2px solid transparent;
+}
+.isb-tab:hover { color: #1e293b; background: #f1f5f9; }
+.isb-tab.active {
+    color: #2563eb;
+    background: #ffffff;
+    border-bottom-color: #2563eb;
+}
+
+/* Panels */
+.isb-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 14px;
+}
+.isb-body::-webkit-scrollbar { width: 5px; }
+.isb-body::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+
+.isb-panel { display: none; }
+.isb-panel.active { display: block; }
+
+.isb-section-title {
+    font-size: 11px;
+    font-weight: 700;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 10px;
+}
+.isb-hint {
+    font-size: 12px;
+    color: #94a3b8;
+    margin: -6px 0 12px;
+    line-height: 1.5;
+}
+
+/* ── Info rows ── */
+.info-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 8px 0;
+    border-bottom: 1px solid #f8fafc;
+    font-size: 13px;
+}
+.info-label { color: #64748b; font-weight: 500; flex-shrink: 0; }
+.info-value {
+    color: #1e293b;
+    font-weight: 600;
+    text-align: right;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 160px;
+}
+
+/* ── Health bar ── */
+.health-score-wrap { margin-top: 6px; }
+.health-score-label {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #1e293b;
+}
+.health-badge {
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 700;
+}
+.health-badge.good { background: #dcfce7; color: #166534; }
+.health-badge.warn { background: #fef9c3; color: #854d0e; }
+.health-badge.bad  { background: #fee2e2; color: #991b1b; }
+.health-bar {
+    height: 8px;
+    background: #f1f5f9;
+    border-radius: 4px;
+    overflow: hidden;
+}
+.health-bar-fill {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 0.6s ease;
+}
+.health-bar-fill.good { background: #16a34a; }
+.health-bar-fill.warn { background: #d97706; }
+.health-bar-fill.bad  { background: #dc2626; }
+
+/* ── Duplicate count card ── */
+.dup-count-card {
+    background: #f8fafc;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 16px;
+    text-align: center;
+    margin-bottom: 12px;
+}
+.dup-count-card.has-dups {
+    background: #fff7ed;
+    border-color: #fed7aa;
+}
+.dup-count-num {
+    font-size: 36px;
+    font-weight: 800;
+    color: #1e293b;
+    line-height: 1;
+    margin-bottom: 4px;
+}
+.dup-count-card.has-dups .dup-count-num { color: #ea580c; }
+.dup-count-label { font-size: 12px; color: #64748b; margin-bottom: 10px; }
+.dup-filter-btn {
+    display: inline-block;
+    padding: 6px 14px;
+    background: #ea580c;
+    color: white;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: background 0.2s;
+}
+.dup-filter-btn:hover { background: #c2410c; }
+
+/* ── Dup group cards ── */
+.dup-group-card {
+    background: #f8fafc;
+    border-radius: 8px;
+    padding: 10px;
+    margin-bottom: 8px;
+    border-left: 3px solid #f59e0b;
+}
+.dup-group-count {
+    font-size: 11px;
+    font-weight: 700;
+    color: #d97706;
+    margin-bottom: 6px;
+}
+.dup-group-row {
+    display: flex;
+    gap: 6px;
+    font-size: 11px;
+    margin-bottom: 3px;
+    overflow: hidden;
+}
+.dup-col { color: #94a3b8; flex-shrink: 0; min-width: 50px; }
+.dup-val { color: #1e293b; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* ── Relation chips ── */
+.relation-chip {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px;
+    border-radius: 10px;
+    text-decoration: none;
+    margin-bottom: 8px;
+    border: 1.5px solid transparent;
+    transition: all 0.2s;
+}
+.relation-chip.combined { background: #eef2ff; border-color: #c7d2fe; }
+.relation-chip.phone    { background: #eff6ff; border-color: #bfdbfe; }
+.relation-chip.email    { background: #f0fdf4; border-color: #bbf7d0; }
+.relation-chip:hover    { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+.rc-icon { font-size: 20px; flex-shrink: 0; }
+.rc-info { flex: 1; }
+.rc-label { font-size: 13px; font-weight: 700; color: #1e293b; }
+.rc-sub   { font-size: 11px; color: #64748b; margin-top: 1px; }
+.rc-count {
+    font-size: 20px;
+    font-weight: 800;
+    color: #1e293b;
+    flex-shrink: 0;
+    min-width: 32px;
+    text-align: right;
+}
+
+.isb-full-btn {
+    display: block;
+    text-align: center;
+    padding: 10px;
+    background: #1e293b;
+    color: white;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: background 0.2s;
+}
+.isb-full-btn:hover { background: #334155; }
+
+/* ── Chart wrappers ── */
+.gauge-wrap {
+    position: relative;
+    text-align: center;
+    margin-bottom: 4px;
+}
+.gauge-label {
+    position: absolute;
+    bottom: 8px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 22px;
+    font-weight: 800;
+    color: #1e293b;
+}
+.chart-wrap { position: relative; width: 100%; }
+
+/* ── Top dups table ── */
+.top-dups-table { margin-top: 6px; }
+.tdrow {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 8px 0;
+    border-bottom: 1px solid #f1f5f9;
+    font-size: 11px;
+}
+.tdrow-badge {
+    background: #fef3c7;
+    color: #92400e;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-weight: 700;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+.tdrow-vals {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    flex: 1;
+    overflow: hidden;
+}
+.tdrow-vals span {
+    background: #f8fafc;
+    border-radius: 3px;
+    padding: 1px 5px;
+    color: #475569;
+    white-space: nowrap;
+}
+
+/* ── Export buttons ── */
+.export-btn {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 16px;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 600;
+    text-decoration: none;
+    margin-bottom: 10px;
+    transition: all 0.2s;
+}
+.export-btn.csv   { background: #f0fdf4; color: #166534; border: 1.5px solid #bbf7d0; }
+.export-btn.excel { background: #eff6ff; color: #1d4ed8; border: 1.5px solid #bfdbfe; }
+.export-btn.clean { background: #1e293b; color: #ffffff; border: 1.5px solid #334155; }
+.export-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+
+/* ── Empty state ── */
+.isb-empty {
+    text-align: center;
+    padding: 24px 16px;
+    color: #94a3b8;
+    font-size: 13px;
+}
+.isb-empty svg { margin-bottom: 8px; }
+.isb-empty p { margin: 0; }

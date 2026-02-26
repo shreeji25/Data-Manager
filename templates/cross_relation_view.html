@@ -1,0 +1,335 @@
+{% block css %}
+<link rel="stylesheet" href="/static/css/loading.css">
+<link rel="stylesheet" href="/static/css/cross_relation.css">
+<style>
+/* ── Column resize handle — cross-relation mini tables ── */
+
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="crf-page">
+
+  <!-- PAGE HEADER -->
+  <div class="crf-header">
+    <div class="crf-header-left">
+      <a href="/dashboard" class="crf-back-btn">← Back to Dashboard</a>
+      <div class="crf-title-block">
+        <h1 class="crf-title">
+          🔗 Cross-File Relations
+          {% if admin_mode %}
+            <span class="crf-admin-badge">Admin View · All Users</span>
+          {% endif %}
+        </h1>
+        <p class="crf-subtitle" id="crf-subtitle">
+          {% if admin_mode %}
+            Scanning all users' files for matching phone &amp; email records
+          {% else %}
+            Matching records found across your uploaded files
+          {% endif %}
+        </p>
+      </div>
+    </div>
+    <div class="crf-header-right">
+      <div class="crf-scan-info" id="crf-scan-info">
+        <span class="crf-scan-dot"></span>
+        <span id="crf-scan-text">
+          {% if admin_mode %}
+            {{ total_users }} users · {{ total_files }} files scanned
+          {% else %}
+            {{ total_files }} files scanned
+          {% endif %}
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <!-- FILTER BAR -->
+  <div class="crf-filter-bar">
+
+    {% if admin_mode %}
+    <!-- ADMIN: User dropdown -->
+    <div class="crf-dropdown-wrap" id="user-dropdown-wrap">
+      <button class="crf-dropdown-btn" id="user-dropdown-btn" onclick="toggleDropdown('user')">
+        <span class="crf-dropdown-icon">👥</span>
+        <span id="user-dropdown-label">All Users ({{ total_users }})</span>
+        <span class="crf-chevron">▾</span>
+      </button>
+      <div class="crf-dropdown-panel" id="user-dropdown-panel">
+        <div class="crf-dropdown-header">
+          <label class="crf-check-row crf-select-all">
+            <input type="checkbox" id="select-all-users" checked onchange="toggleAllUsers(this)">
+            <span>Select All / Deselect All</span>
+          </label>
+        </div>
+        <div class="crf-dropdown-list" id="user-list">
+          {% for user in all_users %}
+          <label class="crf-check-row crf-user-row" data-user-id="{{ user.id }}">
+            <input type="checkbox" class="user-checkbox" value="{{ user.id }}" checked
+                   onchange="onUserChange()">
+            <span class="crf-user-avatar">👤</span>
+            <span class="crf-user-name">{{ user.full_name or user.username }}</span>
+            <span class="crf-user-count">({{ user.file_count }} files)</span>
+          </label>
+          {% endfor %}
+        </div>
+        <div class="crf-dropdown-footer">
+          <button class="crf-apply-btn" onclick="applyFilters()">Apply Filter</button>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- File dropdown -->
+    <div class="crf-dropdown-wrap" id="file-dropdown-wrap">
+      <button class="crf-dropdown-btn" id="file-dropdown-btn" onclick="toggleDropdown('file')">
+        <span class="crf-dropdown-icon">📁</span>
+        <span id="file-dropdown-label">All Files ({{ total_files }})</span>
+        <span class="crf-chevron">▾</span>
+      </button>
+      <div class="crf-dropdown-panel crf-file-panel" id="file-dropdown-panel">
+        <div class="crf-dropdown-header">
+          <label class="crf-check-row crf-select-all">
+            <input type="checkbox" id="select-all-files" checked onchange="toggleAllFiles(this)">
+            <span>Select All / Deselect All</span>
+          </label>
+        </div>
+        <div class="crf-dropdown-list" id="file-list">
+          {% if admin_mode %}
+            {% for user in all_users %}
+            <div class="crf-file-user-group" data-user-id="{{ user.id }}">
+              <div class="crf-file-user-label">
+                <span>👤</span> {{ user.full_name or user.username }}
+              </div>
+              {% for f in user.files %}
+              <label class="crf-check-row crf-file-row" style="--file-color: {{ f.color }}">
+                <input type="checkbox" class="file-checkbox" value="{{ f.id }}"
+                       data-user-id="{{ user.id }}" checked onchange="onFileChange()">
+                <span class="crf-file-dot" style="background:{{ f.color }}"></span>
+                <span class="crf-file-name">{{ f.file_name }}</span>
+              </label>
+              {% endfor %}
+            </div>
+            {% endfor %}
+          {% else %}
+            {% for f in all_files %}
+            <label class="crf-check-row crf-file-row" style="--file-color: {{ f.color }}">
+              <input type="checkbox" class="file-checkbox" value="{{ f.id }}" checked
+                     onchange="onFileChange()">
+              <span class="crf-file-dot" style="background:{{ f.color }}"></span>
+              <span class="crf-file-name">{{ f.file_name }}</span>
+            </label>
+            {% endfor %}
+          {% endif %}
+        </div>
+        <div class="crf-dropdown-footer">
+          <button class="crf-apply-btn" onclick="applyFilters()">Apply Filter</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Search -->
+    <div class="crf-search-wrap">
+      <span class="crf-search-icon">🔍</span>
+      <input type="text" class="crf-search-input" id="crf-search"
+             placeholder="Search phone or email..." oninput="liveSearch(this.value)">
+    </div>
+
+    {% if admin_mode %}
+    <!-- Cross-user toggle -->
+    <label class="crf-toggle-wrap" title="Show only groups where records belong to different users">
+      <input type="checkbox" id="cross-user-toggle" onchange="applyFilters()">
+      <span class="crf-toggle-slider"></span>
+      <span class="crf-toggle-label">Cross-user only</span>
+    </label>
+    {% endif %}
+
+    <button class="crf-reset-btn" onclick="resetFilters()">↺ Reset Filters</button>
+  </div>
+
+  <!-- SUMMARY CARDS -->
+  <div class="crf-summary-strip">
+    <div class="crf-metric-card crf-metric-combined active" id="mode-combined"
+         onclick="setMode('combined')">
+      <div class="crf-metric-badge">COMBINED</div>
+      <div class="crf-metric-icon">🔗</div>
+      <div class="crf-metric-num" id="count-combined">{{ combined_count }}</div>
+      <div class="crf-metric-label">cross-file groups</div>
+      <div class="crf-metric-sub" id="sub-combined">
+        {% if admin_mode %}across {{ total_users }} users{% else %}across {{ total_files }} files{% endif %}
+      </div>
+      <div class="crf-metric-bar"><div class="crf-metric-fill crf-fill-combined"
+           style="width:{{ combined_pct }}%"></div></div>
+    </div>
+
+    <div class="crf-metric-card crf-metric-phone" id="mode-phone"
+         onclick="setMode('phone')">
+      <div class="crf-metric-badge crf-badge-phone">PHONE</div>
+      <div class="crf-metric-icon">📞</div>
+      <div class="crf-metric-num crf-num-phone" id="count-phone">{{ phone_count }}</div>
+      <div class="crf-metric-label">cross-file groups</div>
+      <div class="crf-metric-sub" id="sub-phone">
+        {% if admin_mode %}across {{ total_users }} users{% else %}across {{ total_files }} files{% endif %}
+      </div>
+      <div class="crf-metric-bar"><div class="crf-metric-fill crf-fill-phone"
+           style="width:{{ phone_pct }}%"></div></div>
+    </div>
+
+    <div class="crf-metric-card crf-metric-email" id="mode-email"
+         onclick="setMode('email')">
+      <div class="crf-metric-badge crf-badge-email">EMAIL</div>
+      <div class="crf-metric-icon">✉️</div>
+      <div class="crf-metric-num crf-num-email" id="count-email">{{ email_count }}</div>
+      <div class="crf-metric-label">cross-file groups</div>
+      <div class="crf-metric-sub" id="sub-email">
+        {% if admin_mode %}across {{ total_users }} users{% else %}across {{ total_files }} files{% endif %}
+      </div>
+      <div class="crf-metric-bar"><div class="crf-metric-fill crf-metric-fill-email"
+           style="width:{{ email_pct }}%"></div></div>
+    </div>
+  </div>
+
+  <!-- TOOLBAR -->
+  <div class="crf-toolbar">
+    <div class="crf-toolbar-left">
+      <span class="crf-toolbar-label">SORT:</span>
+      <button class="crf-sort-btn active" id="sort-phone" onclick="setSort('phone')">Phone ↕</button>
+      <button class="crf-sort-btn" id="sort-email" onclick="setSort('email')">Email ↕</button>
+      <button class="crf-sort-btn" id="sort-count" onclick="setSort('count')">Count ↓</button>
+      {% if admin_mode %}
+      <button class="crf-sort-btn" id="sort-users" onclick="setSort('users')">Users ↕</button>
+      {% endif %}
+    </div>
+    <div class="crf-toolbar-right">
+      <span class="crf-results-count" id="crf-results-count">
+        <span id="visible-count">0</span> groups
+      </span>
+      <button class="crf-reset-btn" onclick="resetFilters()">↺ Reset Filters</button>
+    </div>
+  </div>
+
+  <!-- GROUPS LIST -->
+  <div class="crf-groups-list" id="crf-groups-list">
+
+    <!-- Not enough files selected message (hidden by default) -->
+    <div class="crf-empty-state" id="crf-min-files-msg" style="display:none">
+      <div class="crf-empty-icon">📁</div>
+      <div class="crf-empty-title">Select at least 2 files to compare</div>
+      <div class="crf-empty-sub">Choose 2 or more files from the file selector above</div>
+    </div>
+
+    <!-- No results message -->
+    <div class="crf-empty-state" id="crf-no-results" style="display:none">
+      <div class="crf-empty-icon">🔗</div>
+      <div class="crf-empty-title">No cross-file duplicates found</div>
+      <div class="crf-empty-sub">All records are unique across the selected files</div>
+      <button class="crf-apply-btn" style="margin-top:1rem" onclick="resetFilters()">
+        Reset Filters
+      </button>
+    </div>
+
+    <!-- Group cards rendered here -->
+    {% for group in groups %}
+    <div class="crf-group-card"
+         data-mode="{{ group.mode }}"
+         data-phone="{{ group.phone or '' }}"
+         data-email="{{ group.email or '' }}"
+         data-count="{{ group.total_records }}"
+         data-files="{{ group.file_ids | join(',') }}"
+         data-users="{{ group.user_ids | join(',') }}"
+         data-index="{{ loop.index }}">
+
+      <!-- Card Header -->
+      <div class="crf-card-header" onclick="toggleCard(this)">
+        <span class="crf-card-num">{{ '%02d' % loop.index }}</span>
+
+        <div class="crf-card-identifiers">
+          {% if group.phone %}
+          <span class="crf-ident-phone">
+            <span class="crf-ident-icon">📞</span> {{ group.phone }}
+          </span>
+          {% endif %}
+          {% if group.email %}
+          <span class="crf-ident-email">
+            <span class="crf-ident-icon">✉️</span> {{ group.email }}
+          </span>
+          {% endif %}
+        </div>
+
+        <span class="crf-mode-tag crf-mode-{{ group.mode }}">
+          {% if group.mode == 'combined' %}PHONE + EMAIL
+          {% elif group.mode == 'phone' %}PHONE ONLY
+          {% else %}EMAIL ONLY{% endif %}
+        </span>
+
+        <div class="crf-card-meta">
+          {% if admin_mode %}
+          <span class="crf-user-count-badge">
+            👥 {{ group.user_ids | length }} user{% if group.user_ids|length > 1 %}s{% endif %}
+          </span>
+          {% endif %}
+          <span class="crf-file-pills">
+            {% for fid in group.file_ids[:3] %}
+            <span class="crf-file-pill" style="background:{{ file_colors[fid] }}"></span>
+            {% endfor %}
+            {% if group.file_ids|length > 3 %}
+            <span class="crf-file-pill-more">+{{ group.file_ids|length - 3 }}</span>
+            {% endif %}
+          </span>
+          <span class="crf-record-count">● {{ group.total_records }} records</span>
+          <span class="crf-chevron-card">▾</span>
+        </div>
+      </div>
+
+      <!-- Card Body (expanded) -->
+      <div class="crf-card-body" style="display:none">
+        <div class="crf-card-inner" id="card-inner-{{ loop.index }}">
+          <!-- Lazy loaded via AJAX -->
+          <div class="crf-card-loading">Loading records...</div>
+        </div>
+      </div>
+
+    </div>
+    {% endfor %}
+
+  </div>
+
+  <!-- PAGINATION -->
+  <div class="crf-pagination" id="crf-pagination">
+    {% if page > 1 %}
+    <a href="?page={{ page - 1 }}&mode={{ current_mode }}" class="crf-page-btn">‹ Previous</a>
+    {% endif %}
+    {% for p in page_range %}
+      {% if p == page %}
+      <span class="crf-page-btn crf-page-active">{{ p }}</span>
+      {% elif p == '...' %}
+      <span class="crf-page-ellipsis">...</span>
+      {% else %}
+      <a href="?page={{ p }}&mode={{ current_mode }}" class="crf-page-btn">{{ p }}</a>
+      {% endif %}
+    {% endfor %}
+    {% if page < total_pages %}
+    <a href="?page={{ page + 1 }}&mode={{ current_mode }}" class="crf-page-btn">Next ›</a>
+    {% endif %}
+  </div>
+
+</div>
+<div id="crf-page-loader" style="display:none; position:fixed; inset:0; background:rgba(255,255,255,0.75); z-index:9999; align-items:center; justify-content:center; flex-direction:column; gap:12px;">
+  <div style="width:36px;height:36px;border:3px solid #e5e7eb;border-top-color:#2563eb;border-radius:50%;animation:spin 0.7s linear infinite;"></div>
+  <div id="crf-loader-text" style="font-size:14px;color:#374151;font-weight:600;">Loading...</div>
+</div>
+<style>
+@keyframes spin { to { transform: rotate(360deg); } }
+#crf-page-loader.active { display: flex !important; }
+</style>
+
+{% endblock %}
+
+{% block js %}
+
+<script src="/static/js/col_resize.js"></script>
+<script src="/static/js/cross_relation.js"></script>
+
+
+
+{% endblock %}

@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Dashboard | Data Management System</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+
+<body class="bg">
+
+<!-- ================= HEADER ================= -->
+<header class="header">
+    <h1>Data Management System</h1>
+    <a href="/export/logs" class="btn btn-secondary">Export Logs</a>
+</header>
+
+<!-- ================= UPLOAD CARD ================= -->
+<div class="card upload-card">
+    <h2>Upload New Dataset</h2>
+
+    <form action="/upload" method="post" enctype="multipart/form-data" class="upload-form">
+        <div class="form-group">
+            <label>Dataset File</label>
+            <input type="file" name="file" required>
+            <small>Accepted formats: CSV, Excel</small>
+        </div>
+
+        <div class="form-group">
+            <label>Department</label>
+            <select name="department" required>
+                {% for cat in categories %}
+                    <option value="{{ cat }}">{{ cat }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label>Description</label>
+            <input type="text" name="description">
+        </div>
+
+        <button class="btn btn-primary">Upload Dataset</button>
+    </form>
+</div>
+
+<!-- ================= MAIN LAYOUT ================= -->
+<div class="layout">
+
+    <!-- ================= SIDEBAR ================= -->
+    <aside class="sidebar">
+        <h3>Categories</h3>
+
+        <ul class="category-list">
+            <li class="category-item">
+                <a href="/dashboard"
+                   class="{{ 'active' if not selected_department else '' }}">
+                    All
+                </a>
+            </li>
+
+            {% for cat in categories %}
+            <li class="category-item">
+                <a href="/dashboard?department={{ cat }}"
+                   class="{{ 'active' if selected_department == cat else '' }}">
+                    {{ cat }}
+                </a>
+
+                <!-- Trash icon delete (same delete route, UI only changed) -->
+                <a href="/category/delete/{{ cat }}"
+                   class="cat-delete"
+                   title="Delete {{ cat }}"
+                   onclick="return confirm('Delete category {{ cat }}?')">
+                    🗑
+                </a>
+            </li>
+            {% endfor %}
+        </ul>
+
+        <hr>
+
+        <!-- Manage Categories (ADD ONLY – delete removed from here) -->
+        <div class="card manage-card">
+           
+
+            <form action="/category/add" method="post" class="filter-bar">
+                <input type="text" name="name" placeholder="New category name" required>
+                <button class="btn btn-primary">Add</button>
+            </form>
+        </div>
+    </aside>
+
+    <!-- ================= MAIN CONTENT ================= -->
+    <main class="content">
+
+   <form method="get" class="filter-bar">
+
+  <div class="filter-box">
+
+    <!-- Row 1 -->
+    <div class="filter-row line-1">
+
+      <input type="text"
+             name="q"
+             placeholder="Search file name"
+             value="{{ q }}">
+
+      <select name="category">
+        <option value="">All Categories</option>
+
+        {% for c in categories %}
+        <option value="{{ c.name }}"
+          {% if category==c.name %}selected{% endif %}>
+          {{ c.name }}
+        </option>
+        {% endfor %}
+
+      </select>
+
+    </div>
+
+
+    <!-- Row 2 -->
+    <div class="filter-row line-2">
+
+      <input type="date" name="from_date" value="{{ from_date }}">
+      <input type="date" name="to_date" value="{{ to_date }}">
+
+      <input type="number"
+             name="min_rows"
+             placeholder="Min Rows"
+             value="{{ min_rows }}">
+
+      <input type="number"
+             name="max_rows"
+             placeholder="Max Rows"
+             value="{{ max_rows }}">
+
+    </div>
+
+
+    <!-- Row 3 -->
+    <div class="filter-row line-3">
+
+      <label>
+        <input type="checkbox"
+               name="has_duplicates"
+               {% if has_duplicates %}checked{% endif %}>
+        Has Duplicates
+      </label>
+
+      <button type="submit" class="btn btn-primary">
+        Search
+      </button>
+
+    </div>
+
+  </div>
+
+</form>
+
+
+
+
+        <!-- TABLE -->
+        <div class="card">
+            <h2>Uploaded Datasets</h2>
+
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>File Name</th>
+                        <th>Department</th>
+                        <th>Total Rows</th>
+                        <th>Actual</th>
+                        <th>Duplicates</th>
+                        <th>Uploaded At</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                    </thead>
+
+                    <tbody>
+                    {% for d in datasets %}
+                    <tr>
+                        <td>{{ d.id }}</td>
+                        <td>{{ d.file_name }}</td>
+                        <td>{{ d.department }}</td>
+                        <td>{{ d.row_count }}</td>
+                        <td>{{ d.actual_records }}</td>
+                        <td>{{ d.duplicate_records }}</td>
+                        <td>{{ d.uploaded_at }}</td>
+
+                        <td>
+                            {% if d.duplicate_records > 0 %}
+                                <span class="badge badge-warning">Has Duplicates</span>
+                            {% else %}
+                                <span class="badge badge-success">Clean</span>
+                            {% endif %}
+                        </td>
+
+                        <td>
+                            <div class="actions">
+                                <a href="/view/{{ d.id }}" class="btn btn-view">View</a>
+                                <a href="/download/{{ d.id }}" class="btn btn-download">Download</a>
+
+                                <form action="/delete/{{ d.id }}"
+                                      method="get"
+                                      class="inline-form"
+                                      onsubmit="return confirm('Delete dataset?');">
+                                    <button class="btn btn-delete">Delete</button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- PAGINATION -->
+         <div class="pagination">
+                
+                <div style="width: 100%; display: flex; justify-content: center; gap: 8px; flex-wrap: wrap;">
+                    {% if page > 1 %}
+                    <a href="?page={{ page-1 }}&q={{ q }}&category={{ category }}" class="page-btn">‹</a>
+                    {% endif %}
+
+                    {% if total_pages <= 4 %}
+                        {% for p in range(1, total_pages+1) %}
+                        <a href="?page={{ p }}&q={{ q }}&category={{ category }}"
+                           class="page-btn {% if p==page %}active{% endif %}">
+                            {{ p }}
+                        </a>
+                        {% endfor %}
+                    {% else %}
+                        {% for p in range(1, 4) %}
+                        <a href="?page={{ p }}&q={{ q }}&category={{ category }}"
+                           class="page-btn {% if p==page %}active{% endif %}">
+                            {{ p }}
+                        </a>
+                        {% endfor %}
+                        
+                        <span class="page-btn" style="border: none; background: none; cursor: default;">...</span>
+                        
+                        <a href="?page={{ total_pages }}&q={{ q }}&category={{ category }}"
+                           class="page-btn {% if page==total_pages %}active{% endif %}">
+                            {{ total_pages }}
+                        </a>
+                    {% endif %}
+
+                    {% if page < total_pages %}
+                    <a href="?page={{ page+1 }}&q={{ q }}&category={{ category }}" class="page-btn">›</a>
+                    {% endif %}
+                </div>
+            </div>
+
+        </div>
+    </main>
+</div>
+
+</body>
+</html>

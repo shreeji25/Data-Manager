@@ -1,0 +1,489 @@
+/* ===============================================
+   COMMON.CSS - Base Styles & Global Components
+   =============================================== */
+
+/* ================= CSS VARIABLES ================= */
+/* ================= ROOT ================= */
+
+html, body {
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    padding: 0;
+}
+
+
+/* ================= VARIABLES ================= */
+
+:root {
+    --header-height: 64px;
+    --sidebar-width: 260px;
+}
+
+
+/* ================= HEADER ================= */
+
+.main-header {
+    position: fixed;
+
+    top: 0;
+    left: 0;
+
+    width: 100%;
+    height: var(--header-height);
+
+    background: linear-gradient(to right, #020617, #0f172a);
+    color: rgb(20, 18, 18);
+
+    display: flex;
+    align-items: center;
+
+    padding: 0 24px;
+
+    z-index: 1000;
+}
+
+/* ================= RESET & BASE ================= */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: "Segoe UI", Tahoma, Arial, sans-serif;
+}
+
+body.bg {
+    background-color: #f4f6f9;
+    color: #1f2937;
+    min-height: 100vh;
+    padding-top: 0 !important;
+    margin-top: 0 !important;
+}
+
+/* ================= GLOBAL HEADER ================= */
+.global-header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: var(--header-height);
+    color: #ffffff; 
+    background: #232020;
+    border-bottom: 1px solid #e5e7eb;
+    display: flex;
+    align-items: center;
+    padding: 0 40px;
+    z-index: 1000;
+}
+
+.global-header h1,
+.global-header .site-title {
+    color: #ffffff;
+    margin: 0;
+}
+
+.site-title {
+    font-size: 26px;
+    font-weight: 700;
+    color: #111827;
+}
+
+.header-title {
+    font-size: 22px;
+    font-weight: 600;
+    color: #111827;
+}
+
+/* ================= PAGE LAYOUT ================= */
+.page-layout {
+    display: flex;
+}
+
+.layout {
+    min-height: 100vh;
+    display: flex;
+}
+
+
+/* ================= PAGE TITLE ================= */
+.page-title {
+    font-size: 28px;
+    font-weight: 700;
+    margin: 0;
+    color: #111827;
+}
+
+.page-title-wrapper {
+    position: sticky;
+    top: 70px;
+    background: #f4f6f9;
+    padding: 15px 50px;
+    z-index: 20;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+/* ================= CARD COMPONENT ================= */
+.card {
+    background: #ffffff;
+    border-radius: 12px;
+    padding: 24px;
+
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.06);
+
+    width: 100%;
+
+    overflow: visible;   /* IMPORTANT */
+}
+
+
+
+
+.card h2 {
+    font-size: 20px;
+    margin-bottom: 16px;
+    color: #111827;
+}
+
+/* ================= BUTTONS ================= */
+.btn {
+    padding: 9px 16px;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    font-size: 14px;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.btn-primary {
+    background: #2563eb;
+    color: #ffffff;
+}
+
+.btn-primary:hover {
+    background: #1e40af;
+}
+
+.btn-secondary {
+    background: #e5e7eb;
+    color: #111827;
+}
+
+.btn-secondary:hover {
+    background: #d1d5db;
+}
+
+.btn-view {
+    background: #0ea5e9;
+    color: #ffffff;
+}
+
+.btn-download {
+    background: #10b981;
+    color: #ffffff;
+}
+
+.btn-delete {
+    background: #ef4444;
+    color: #ffffff;
+}
+
+.btn-view:hover,
+.btn-download:hover,
+.btn-delete:hover {
+    opacity: 0.9;
+}
+
+.btn-sm {
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 13px;
+}
+
+/* ================= FORMS ================= */
+input[type="text"],
+input[type="file"],
+input[type="date"],
+input[type="number"],
+select {
+    padding: 9px 12px;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    font-size: 14px;
+}
+
+input[type="text"]:focus,
+input[type="date"]:focus,
+input[type="number"]:focus,
+select:focus {
+    outline: none;
+    border-color: #2563eb;
+}
+
+/* ================= TABLE ================= */
+.table-wrapper {
+    overflow-x: auto;
+    width: 100%;
+}
+
+
+
+
+
+th,
+td {
+    padding: 12px 14px;
+    text-align: left;
+    border-bottom: 1px solid #e5e7eb;
+    white-space: nowrap;
+}
+
+
+
+th {
+    font-weight: 600;
+    color: #374151;
+}
+
+tbody tr:hover {
+    background-color: #f9fafb;
+}
+
+td:last-child {
+    min-width: 200px;
+    white-space: nowrap;
+}
+
+/* ================= ACTIONS ================= */
+.actions {
+    display: inline-flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    align-items: center;
+    max-width: 100%;
+    overflow: visible;
+}
+
+.actions-horizontal {
+    display: flex !important;
+    flex-direction: row !important;
+    gap: 8px;
+    align-items: center;
+    justify-content: flex-start;
+    flex-wrap: nowrap;
+}
+
+.actions-horizontal .btn {
+    white-space: nowrap;
+    padding: 8px 14px;
+    border-radius: 10px;
+}
+
+.inline-form {
+    display: inline;
+}
+
+/* ================= PAGINATION ================= */
+.pagination {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    margin-top: 20px;
+    justify-content: center;
+}
+
+.page-btn {
+    padding: 8px 12px;
+    border-radius: 6px;
+    border: 1px solid #d1d5db;
+    text-decoration: none;
+    color: #374151;
+    font-size: 13px;
+    transition: all 0.2s ease;
+    cursor: pointer;
+    background: #fff;
+    display: inline-block;
+    margin: 3px;
+}
+
+.page-btn:hover {
+    background: #f3f4f6;
+    border-color: #9ca3af;
+}
+
+.page-btn.active {
+    background: #2563eb;
+    color: #ffffff;
+    border-color: #2563eb;
+    font-weight: 600;
+}
+
+.page-btn.dots {
+    cursor: default;
+    background: none;
+    border: none;
+    font-weight: bold;
+}
+
+.pagination-container {
+    margin-top: 15px;
+    text-align: center;
+}
+
+.pagination-buttons {
+    margin-top: 10px;
+}
+
+/* ================= BADGES ================= */
+.badge-clean {
+    background: #dcfce7;
+    color: #166534;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.badge-dup {
+    background: #fee2e2;
+    color: #991b1b;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+/* ================= UTILITY CLASSES ================= */
+.mono {
+    font-family: monospace;
+}
+
+.empty-text {
+    text-align: center;
+    color: #6b7280;
+    padding: 20px;
+    margin-top: 20px;
+    font-style: italic;
+}
+
+.back-link {
+    margin-top: 20px;
+}
+
+/* ================= SCROLLBAR STYLING ================= */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #c7d2fe;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-track {
+    background: #f1f5f9;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-corner {
+    background: #f1f5f9;
+}
+
+
+
+/* ================= MAIN WRAPPER ================= */
+
+.main-header {
+    position: fixed;
+
+    top: 0;
+    left: 0;
+
+    width: 100%;
+    height: var(--header-height);
+
+    background: linear-gradient(to right, #020617, #0f172a);
+    color: rgb(37, 33, 33);
+
+    display: flex;
+    align-items: center;
+
+    padding: 0 24px;
+
+    z-index: 1000;
+}
+
+
+/* ================= MAIN WRAPPER ================= */
+/* ================= APP LAYOUT ================= */
+
+/* ================= APP LAYOUT ================= */
+
+.main-wrapper {
+    position: fixed;
+    top: var(--header-height);
+    left: 0;
+
+    width: 100vw;
+    height: calc(100vh - var(--header-height));
+
+    display: flex;
+
+    overflow: visible;
+}
+
+
+/* ================= SIDEBAR ================= */
+
+.sidebar {
+    width: 260px;
+    min-width: 260px;
+
+    height: 100%;
+
+    background: #020617;
+
+    display: flex;
+    flex-direction: column;
+
+    overflow: hidden;
+}
+
+
+/* ================= ONLY CATEGORY SCROLL ================= */
+
+.category-scroll {
+  
+
+    overflow-y: auto;
+
+    padding-right: 4px;
+}
+
+/* MAIN CONTENT */
+
+/* ================= CONTENT (VIEW PAGE FIX) ================= */
+
+
+
+
+
+/* CARD FIX */
+
+.card {
+    margin-bottom: 20px;
+}
+
+
+body,
+html {
+    overflow-x: hidden;
+}
+body.bg {
+    overflow: hidden;
+}
