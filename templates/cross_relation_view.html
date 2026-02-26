@@ -8,6 +8,80 @@
 {% endblock %}
 
 {% block content %}
+<!-- ═══════════════════════════════════════════════════════════
+     ADD THIS BLOCK anywhere inside your <body> in cross_relation_view.html
+     It shows a full-screen spinner while groups are being computed,
+     then auto-reloads when ready. Does nothing when cache is warm.
+     ═══════════════════════════════════════════════════════════ -->
+
+{% if is_computing %}
+<!-- Spinner overlay — only rendered when background thread is still running -->
+<div id="crf-computing-overlay" style="
+    position:fixed; inset:0; z-index:9999;
+    background:rgba(15,23,42,0.82);
+    display:flex; flex-direction:column;
+    align-items:center; justify-content:center; gap:20px;">
+
+  <!-- Spinning ring -->
+  <div style="
+      width:64px; height:64px; border-radius:50%;
+      border:6px solid #334155;
+      border-top-color:#4f46e5;
+      animation:crf-spin 0.9s linear infinite;">
+  </div>
+
+  <div style="text-align:center; color:#e2e8f0;">
+    <div style="font-size:1.2rem; font-weight:600; margin-bottom:6px;">
+      Scanning files for cross-file matches…
+    </div>
+    <div style="font-size:0.9rem; color:#94a3b8;" id="crf-elapsed">
+      This only happens once. Results are cached after.
+    </div>
+  </div>
+</div>
+
+<style>
+  @keyframes crf-spin { to { transform: rotate(360deg); } }
+</style>
+
+<script>
+(function () {
+  // Build the current URL's file_ids param to pass to /status
+  var params = new URLSearchParams(window.location.search);
+  var fileIds = params.getAll('file_ids');  // list of ids
+  var statusUrl = '/cross-relations/status';
+  if (fileIds.length) {
+    statusUrl += '?' + fileIds.map(function(id){ return 'file_ids=' + id; }).join('&');
+  }
+
+  var startTime = Date.now();
+  var elapsedEl = document.getElementById('crf-elapsed');
+
+  function poll() {
+    fetch(statusUrl)
+      .then(function(r){ return r.json(); })
+      .then(function(data){
+        var secs = Math.round((Date.now() - startTime) / 1000);
+        if (elapsedEl) {
+          elapsedEl.textContent = 'Processing… ' + secs + 's elapsed. Results cached after first load.';
+        }
+        if (data.ready) {
+          // Reload the page — will now serve instantly from cache
+          window.location.reload();
+        } else {
+          setTimeout(poll, 2000);  // poll every 2 seconds
+        }
+      })
+      .catch(function(){ setTimeout(poll, 3000); });
+  }
+
+  // Start polling after a short delay
+  setTimeout(poll, 2000);
+})();
+</script>
+{% endif %}
+
+<!-- END of snippet -->
 <div class="crf-page">
 
   <!-- PAGE HEADER -->
