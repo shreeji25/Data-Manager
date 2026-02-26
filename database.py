@@ -1,7 +1,9 @@
+import os
+
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
-
-DATABASE_URL = "postgresql+psycopg2://postgres:25092004@localhost:5432/dataset_portal"
+import os
+DATABASE_URL = os.getenv("DATABASE_URL", "postgresql+psycopg2://postgres:25092004@localhost:5432/dataset_portal")
 
 engine = create_engine(
     DATABASE_URL,
