@@ -284,56 +284,6 @@ def promote_to_admin(
         )
 
 
-
-
-@router.post("/users/{user_id}/change-password")
-async def change_user_password(
-    user_id: int,
-    request: Request,
-    db: Session = Depends(get_db),
-    admin: dict = Depends(require_admin)
-):
-    """Admin changes the password of any user (including themselves)."""
-    form = await request.form()
-    new_password = form.get("new_password", "").strip()
-
-    # Validation
-    if not new_password:
-        return JSONResponse(
-            status_code=400,
-            content={"success": False, "error": "New password is required"}
-        )
-
-    if len(new_password) < 6:
-        return JSONResponse(
-            status_code=400,
-            content={"success": False, "error": "Password must be at least 6 characters"}
-        )
-
-    user = db.query(User).filter(User.id == user_id).first()
-    if not user:
-        return JSONResponse(
-            status_code=404,
-            content={"success": False, "error": "User not found"}
-        )
-
-    try:
-        user.password = User.hash_password(new_password)
-        db.commit()
-
-        return JSONResponse(
-            status_code=200,
-            content={"success": True, "message": f"Password updated for '{user.username}'"}
-        )
-
-    except Exception as e:
-        db.rollback()
-        return JSONResponse(
-            status_code=500,
-            content={"success": False, "error": f"Failed to update password: {str(e)}"}
-        )
-
-
 @router.post("/users/{user_id}/demote")
 def demote_from_admin(
     user_id: int,
