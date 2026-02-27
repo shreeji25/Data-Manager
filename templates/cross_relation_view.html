@@ -368,6 +368,94 @@
 
   </div>
 
+{% set PREVIEW_LIMIT = PREVIEW_LIMIT or 10 %}
+
+<div class="crf-detail-wrap">
+  {% for fg in file_groups %}
+
+    {# ── Total records this file contributes to the group ── #}
+    {% set total_in_file = fg.records | length %}
+    {% set show_toggle   = total_in_file > PREVIEW_LIMIT %}
+
+    <div class="crf-file-section" data-file-id="{{ fg.file.id }}">
+
+      {# ── File header bar (coloured) ── #}
+      <div class="crf-file-header" style="background: {{ fg.file.color }}">
+        <span class="crf-file-icon">📄</span>
+        <span class="crf-file-title">{{ fg.file.file_name }}</span>
+        <span class="crf-file-record-count">
+          {{ total_in_file }} record{{ 's' if total_in_file != 1 }}
+        </span>
+      </div>
+
+      {# ── Column headers ── #}
+      <div class="crf-table-wrap">
+        <table class="crf-mini-table">
+          <thead>
+            <tr>
+              {% for col in fg.columns %}
+              <th class="crf-th" data-col="{{ loop.index0 }}">
+                {{ col }}
+                <span class="crf-resize-handle"></span>
+              </th>
+              {% endfor %}
+            </tr>
+          </thead>
+
+          <tbody id="tbody-file-{{ fg.file.id }}-group-{{ group.id }}">
+
+            {# ── First PREVIEW_LIMIT rows always visible ── #}
+            {% for row in fg.records[:PREVIEW_LIMIT] %}
+            <tr class="crf-tr">
+              {% for cell in row %}
+              <td class="crf-td">{{ cell if cell is not none else '—' }}</td>
+              {% endfor %}
+            </tr>
+            {% endfor %}
+
+            {# ── Extra rows — hidden until "Show All" is clicked ── #}
+            {% if show_toggle %}
+            {% for row in fg.records[PREVIEW_LIMIT:] %}
+            <tr class="crf-tr crf-extra-row"
+                style="display:none"
+                data-file="{{ fg.file.id }}"
+                data-group="{{ group.id }}">
+              {% for cell in row %}
+              <td class="crf-td">{{ cell if cell is not none else '—' }}</td>
+              {% endfor %}
+            </tr>
+            {% endfor %}
+            {% endif %}
+
+          </tbody>
+        </table>
+      </div>
+
+      {# ── Show All / Show Less toggle button ── #}
+      {% if show_toggle %}
+      <div class="crf-show-all-bar">
+        <button class="crf-show-all-btn"
+                onclick="crfToggleRows(this, '{{ fg.file.id }}', '{{ group.id }}')"
+                data-expanded="false"
+                data-total="{{ total_in_file }}"
+                data-preview="{{ PREVIEW_LIMIT }}">
+          <span class="crf-show-all-icon">⬇</span>
+          Show all {{ total_in_file }} records
+          <span class="crf-show-all-hidden-count">
+            (+{{ total_in_file - PREVIEW_LIMIT }} more)
+          </span>
+        </button>
+      </div>
+      {% else %}
+      {# ── Subtle footer when everything is already visible ── #}
+      <div class="crf-file-footer">
+        {{ total_in_file }} record{{ 's' if total_in_file != 1 }} in this file
+      </div>
+      {% endif %}
+
+    </div><!-- /.crf-file-section -->
+  {% endfor %}
+</div><!-- /.crf-detail-wrap -->
   <!-- PAGINATION -->
   <div class="crf-pagination" id="crf-pagination">
     {% if page > 1 %}

@@ -443,6 +443,8 @@ async function loadCardRecords(card, index) {
   }
 }
 
+const CRF_PREVIEW_LIMIT = 10;
+
 function buildCardBody(data, mode) {
   if (!data.file_groups || data.file_groups.length === 0) {
     return `<div class="crf-card-loading">No records found.</div>`;
@@ -450,46 +452,70 @@ function buildCardBody(data, mode) {
 
   let html = '';
 
-  data.file_groups.forEach(group => {
-    // Darken the color for text readability on header
-    const headerColor = group.color || '#334155';
+  data.file_groups.forEach((group, groupIdx) => {
+    const headerColor  = group.color || '#334155';
+    const total        = group.records.length;
+    const showToggle   = total > CRF_PREVIEW_LIMIT;
+    const previewRecs  = showToggle ? group.records.slice(0, CRF_PREVIEW_LIMIT) : group.records;
+    const hiddenRecs   = showToggle ? group.records.slice(CRF_PREVIEW_LIMIT)    : [];
+    const fileKey      = `${group.dataset_id || groupIdx}-${Date.now()}`;
+
+    // Build a row of cells
+    const buildRow = (row, hidden = false) => `
+      <tr class="crf-tr${hidden ? ' crf-extra-row' : ''}"
+          ${hidden ? `style="display:none" data-file="${fileKey}"` : ''}>
+        ${group.columns.map(col => {
+          const val     = row[col] ?? '—';
+          const isPhone = col === group.phone_col;
+          const isEmail = col === group.email_col;
+          const cls     = isPhone ? 'crf-cell-match-phone'
+                        : isEmail ? 'crf-cell-match-email' : '';
+          return `<td class="crf-td ${cls}" title="${escHtml(String(val))}">${escHtml(String(val))}</td>`;
+        }).join('')}
+      </tr>`;
 
     html += `
-    <div class="crf-file-block">
+    <div class="crf-file-block crf-file-section" data-file-id="${fileKey}">
+
       <div class="crf-file-block-header" style="background:${headerColor}">
         <span class="crf-file-icon">📄</span>
         <span class="crf-file-block-fname">${escHtml(group.file_name)}</span>
-        ${group.user_name ? `
-        <span class="crf-file-block-user">
-          <span>👤</span> ${escHtml(group.user_name)}
-        </span>` : ''}
+        ${group.user_name ? `<span class="crf-file-block-user"><span>👤</span> ${escHtml(group.user_name)}</span>` : ''}
+        <span class="crf-file-record-count" style="margin-left:auto;font-size:0.8rem;opacity:0.9;">
+          ${total} record${total !== 1 ? 's' : ''}
+        </span>
       </div>
+
       <div class="crf-mini-table-wrap">
         <table class="crf-mini-table">
           <thead>
             <tr>
-              ${group.columns.map(c => `<th>${escHtml(c)}</th>`).join('')}
+              ${group.columns.map(c => `<th class="crf-th">${escHtml(c)}</th>`).join('')}
             </tr>
           </thead>
           <tbody>
-            ${group.records.map(row => `
-              <tr>
-                ${group.columns.map(col => {
-                  const val  = row[col] ?? '—';
-                  const isPhone = col === group.phone_col;
-                  const isEmail = col === group.email_col;
-                  const cls = isPhone ? 'crf-cell-match-phone'
-                            : isEmail ? 'crf-cell-match-email' : '';
-                  return `<td class="${cls}" title="${escHtml(String(val))}">${escHtml(String(val))}</td>`;
-                }).join('')}
-              </tr>
-            `).join('')}
+            ${previewRecs.map(row => buildRow(row, false)).join('')}
+            ${hiddenRecs.map(row  => buildRow(row, true)).join('')}
           </tbody>
         </table>
       </div>
-      <div class="crf-file-record-count">
-        ${group.records.length} record${group.records.length !== 1 ? 's' : ''} in this file
-      </div>
+
+      ${showToggle ? `
+      <div class="crf-show-all-bar">
+        <button class="crf-show-all-btn"
+                onclick="crfToggleRows(this, '${fileKey}')"
+                data-expanded="false"
+                data-total="${total}"
+                data-preview="${CRF_PREVIEW_LIMIT}">
+          <span class="crf-show-all-icon">⬇</span>
+          Show all ${total} records
+          <span class="crf-show-all-hidden-count">(+${total - CRF_PREVIEW_LIMIT} more)</span>
+        </button>
+      </div>` : `
+      <div class="crf-file-footer">
+        ${total} record${total !== 1 ? 's' : ''} in this file
+      </div>`}
+
     </div>`;
   });
 
@@ -538,3 +564,44 @@ const _crfResizeObserver = new MutationObserver((mutations) => {
 });
 _crfResizeObserver.observe(document.body, { childList: true, subtree: true });
 
+/**
+ * crfToggleRows
+ * Toggle hidden rows for a file block inside a group card.
+ *
+ * @param {HTMLElement} btn      - The clicked button
+ * @param {string}      fileId   - dataset_id (data-file attribute on hidden rows)
+ */
+function crfToggleRows(btn, fileId) {
+  const expanded = btn.dataset.expanded === 'true';
+  const total    = parseInt(btn.dataset.total,   10);
+  const preview  = parseInt(btn.dataset.preview, 10);
+  const hidden   = total - preview;
+
+  // All extra rows for this file inside this card
+  const section = btn.closest('.crf-file-section');
+  const rows    = section.querySelectorAll(`.crf-extra-row[data-file="${fileId}"]`);
+
+  if (expanded) {
+    // Collapse
+    rows.forEach(r => r.style.display = 'none');
+    btn.dataset.expanded = 'false';
+    btn.classList.remove('crf-show-all-btn--expanded');
+    btn.innerHTML = `
+      <span class="crf-show-all-icon">⬇</span>
+      Show all ${total} records
+      <span class="crf-show-all-hidden-count">(+${hidden} more)</span>
+    `;
+    // Scroll the section back into view
+    section.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  } else {
+    // Expand
+    rows.forEach(r => r.style.display = '');
+    btn.dataset.expanded = 'true';
+    btn.classList.add('crf-show-all-btn--expanded');
+    btn.innerHTML = `
+      <span class="crf-show-all-icon">⬆</span>
+      Show less
+      <span class="crf-show-all-hidden-count">(collapse to ${preview})</span>
+    `;
+  }
+}

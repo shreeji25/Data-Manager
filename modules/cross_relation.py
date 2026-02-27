@@ -1,39 +1,3 @@
-"""
-cross_relation.py — Cross-File Relations page
-Detects matching phone/email records across multiple uploaded files.
-
-Routes:
-  GET  /cross-relations              — Main page (loads in <1s always)
-  GET  /cross-relations/status       — AJAX: poll background index build
-  GET  /cross-relations/records      — AJAX: drill-down records for a group
-  POST /cross-relations/rebuild      — Force rebuild index for a dataset
-
-HOW IT IS FAST FOR 30+ FILES × 50,000+ ROWS
----------------------------------------------
-The old approach scanned every row of every file on every page load.
-30 files × 50,000 rows = 1.5 million rows processed in Python every time.
-
-The new approach:
-  1. A SQLite index table (cross_rel_index) stores one row per
-     dataset row: (dataset_id, user_id, phone_norm, email_norm).
-     This is built ONCE per file — when the file is first seen or
-     has changed on disk.
-
-  2. The page load does a single fast SQL GROUP BY query:
-       SELECT phone_norm, email_norm, COUNT(DISTINCT dataset_id)
-       FROM cross_rel_index
-       GROUP BY phone_norm, email_norm
-       HAVING COUNT(DISTINCT dataset_id) >= 2
-     This runs in milliseconds even on 1.5 million rows.
-
-  3. Index rebuild runs in a background thread so the page is
-     never blocked. A spinner shows on first build; all subsequent
-     loads are instant.
-
-  4. Index is invalidated per-file using mtime — rebuilt only when
-     the file on disk actually changes.
-"""
-
 from fastapi import APIRouter, Depends, Request, Query
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
@@ -53,6 +17,14 @@ from auth import get_current_user
 from utils.permissions import get_effective_user
 from modules.shared import read_file, normalize_email
 import re as _re
+
+
+router = APIRouter()
+templates = Jinja2Templates(directory="templates")
+
+# ── How many rows to show per file before "Show All" button ─────
+CARD_PREVIEW_LIMIT = 10
+
 
 _log = logging.getLogger(__name__)
 
@@ -827,3 +799,115 @@ def cross_relation_records(
             continue
 
     return JSONResponse({"file_groups": file_groups})
+
+# ════════════════════════════════════════════════════════════════
+#  AJAX — CARD DETAIL (lazy-load with 10-row preview per file)
+# ════════════════════════════════════════════════════════════════
+
+@router.get("/cross-relations/card-detail", response_class=HTMLResponse)
+def crf_card_detail(
+    request:  Request,
+    db:       Session       = Depends(get_db),
+    phone:    Optional[str] = Query(None),
+    email:    Optional[str] = Query(None),
+    file_ids: Optional[str] = Query(None),
+    mode:     str           = Query("combined"),
+):
+    """
+    Returns an HTML partial for a group card's expanded body.
+    Uses the same logic as /cross-relations/records but renders
+    a Jinja2 template with PREVIEW_LIMIT rows visible per file
+    and the rest hidden — revealed by the JS "Show All" button.
+    """
+    current_user = get_current_user(request)
+    if not current_user:
+        return HTMLResponse("", status_code=401)
+
+    user_role  = current_user.get("role") if isinstance(current_user, dict) else current_user.role
+    admin_mode = user_role == "admin"
+
+    # ── Parse file_ids ───────────────────────────────────────────
+    file_id_list = []
+    if file_ids:
+        try:
+            file_id_list = [int(fid.strip()) for fid in file_ids.split(",") if fid.strip()]
+        except ValueError:
+            return HTMLResponse("", status_code=400)
+
+    if not file_id_list:
+        return HTMLResponse("", status_code=400)
+
+    # ── Fetch datasets (with ownership check for non-admins) ─────
+    if admin_mode:
+        datasets = db.query(Dataset).filter(Dataset.id.in_(file_id_list)).all()
+    else:
+        effective_user = get_effective_user(request, db)
+        eff_id = effective_user.get("id") if isinstance(effective_user, dict) else effective_user.id
+        datasets = db.query(Dataset).filter(
+            Dataset.id.in_(file_id_list),
+            Dataset.user_id == eff_id,
+        ).all()
+
+    color_map = {ds.id: _color_for_index(i) for i, ds in enumerate(datasets)}
+
+    # ── Build per-file record groups (same logic as /records) ────
+    file_groups = []
+    for ds in datasets:
+        try:
+            df = _load_file_df(ds)
+            if df is None:
+                continue
+
+            phone_col, email_col = _detect_cols(df)
+
+            if phone_col:
+                df["__phone_norm__"] = df[phone_col].apply(normalize_phone)
+            if email_col:
+                df["__email_norm__"] = df[email_col].apply(normalize_email)
+
+            mask = pd.Series([True] * len(df), index=df.index)
+            if phone and phone_col:
+                mask = mask & (df["__phone_norm__"] == phone)
+            if email and email_col:
+                mask = mask & (df["__email_norm__"] == email)
+
+            matched = df[mask]
+            if matched.empty:
+                continue
+
+            display_cols = [c for c in matched.columns if not c.startswith("__")]
+            records = [
+                [
+                    (None if (isinstance(v, float) and v != v)
+                     else v.item() if hasattr(v, "item")
+                     else str(v) if hasattr(v, "isoformat")
+                     else v)
+                    for v in row
+                ]
+                for row in matched[display_cols].fillna("").itertuples(index=False, name=None)
+            ]
+
+            owner = db.query(User).filter_by(id=ds.user_id).first()
+
+            file_groups.append({
+                "dataset_id": ds.id,
+                "file_name":  ds.file_name,
+                "user_name":  (owner.full_name or owner.username) if (owner and admin_mode) else None,
+                "color":      color_map.get(ds.id, "#334155"),
+                "columns":    display_cols,
+                "records":    records,       # full list — template slices to PREVIEW_LIMIT
+            })
+
+        except Exception as exc:
+            _log.exception("crf_card_detail: failed dataset %s: %s", ds.id, exc)
+            continue
+
+    return templates.TemplateResponse(
+        "partials/crf_card_detail_partial.html",
+        {
+            "request":       request,
+            "file_groups":   file_groups,
+            "PREVIEW_LIMIT": CARD_PREVIEW_LIMIT,
+            "admin_mode":    admin_mode,
+        },
+    )
