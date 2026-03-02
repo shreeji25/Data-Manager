@@ -8,11 +8,13 @@ from fastapi import APIRouter, Depends, Request, HTTPException
 from fastapi.responses import RedirectResponse, HTMLResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
-from sqlalchemy import func
+from sqlalchemy import func, text
+from datetime import datetime, timedelta
+import json
 
 from auth import get_current_user
 from database import get_db
-from models import User, Dataset
+from models import User, Dataset, Category
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 templates = Jinja2Templates(directory="templates")
@@ -24,6 +26,174 @@ def require_admin(request: Request):
     if not user or user.get("role") != "admin":
         raise HTTPException(status_code=403, detail="Admin access required")
     return user
+
+
+@router.get("/overview", response_class=HTMLResponse)
+def admin_overview(
+    request: Request,
+    db: Session = Depends(get_db),
+    admin: dict = Depends(require_admin),
+):
+    """Admin overview dashboard with system-wide charts and stats."""
+
+    # ── Stat Cards ────────────────────────────────────────────────────────
+    total_users    = db.query(func.count(User.id)).filter(User.role != "admin").scalar() or 0
+    total_datasets = db.query(func.count(Dataset.id)).scalar() or 0
+    total_rows     = db.query(func.sum(Dataset.row_count)).scalar() or 0
+
+    most_active = (
+        db.query(User.username, func.count(Dataset.id).label("cnt"))
+        .join(Dataset, Dataset.user_id == User.id)
+        .filter(User.role != "admin")
+        .group_by(User.id)
+        .order_by(func.count(Dataset.id).desc())
+        .first()
+    )
+    most_active_user  = most_active[0] if most_active else "—"
+    most_active_count = most_active[1] if most_active else 0
+
+    # ── Chart 1: Dataset Growth (cumulative by month) ─────────────────────
+    datasets_all = (
+        db.query(Dataset.uploaded_at)
+        .filter(Dataset.uploaded_at.isnot(None))
+        .order_by(Dataset.uploaded_at)
+        .all()
+    )
+    # Build cumulative monthly counts
+    monthly = {}
+    for row in datasets_all:
+        if row.uploaded_at:
+            key = row.uploaded_at.strftime("%Y-%m")
+            monthly[key] = monthly.get(key, 0) + 1
+    cumulative = []
+    running = 0
+    for key in sorted(monthly.keys()):
+        running += monthly[key]
+        cumulative.append({"month": key, "count": running})
+    growth_data = json.dumps(cumulative[-12:] if len(cumulative) > 12 else cumulative)
+
+    # ── Chart 2: Category Distribution ────────────────────────────────────
+    cat_rows = (
+        db.query(Dataset.department, func.count(Dataset.id).label("cnt"))
+        .filter(Dataset.department.isnot(None))
+        .group_by(Dataset.department)
+        .order_by(func.count(Dataset.id).desc())
+        .all()
+    )
+    cat_data = json.dumps([{"name": r.department, "count": r.cnt} for r in cat_rows])
+
+    uncategorised = db.query(func.count(Dataset.id)).filter(
+        (Dataset.department.is_(None)) | (Dataset.department == "")
+    ).scalar() or 0
+    if uncategorised > 0:
+        cat_list = json.loads(cat_data)
+        cat_list.append({"name": "Uncategorised", "count": uncategorised})
+        cat_data = json.dumps(cat_list)
+
+    # ── Chart 3: File Type Breakdown ──────────────────────────────────────
+    all_files = db.query(Dataset.file_name).all()
+    type_counts = {"CSV": 0, "XLSX": 0, "XLS": 0, "Other": 0}
+    for row in all_files:
+        if row.file_name:
+            ext = row.file_name.rsplit(".", 1)[-1].upper() if "." in row.file_name else ""
+            if ext == "CSV":
+                type_counts["CSV"] += 1
+            elif ext == "XLSX":
+                type_counts["XLSX"] += 1
+            elif ext == "XLS":
+                type_counts["XLS"] += 1
+            else:
+                type_counts["Other"] += 1
+    filetype_data = json.dumps([{"name": k, "count": v} for k, v in type_counts.items() if v > 0])
+
+    # ── Chart 4: User Activity Heatmap (uploads per user per day, 84 days) ─
+    since = datetime.now() - timedelta(days=84)
+    activity_rows = (
+        db.query(
+            User.username,
+            func.date(Dataset.uploaded_at).label("day"),
+            func.count(Dataset.id).label("cnt"),
+        )
+        .join(Dataset, Dataset.user_id == User.id)
+        .filter(User.role != "admin", Dataset.uploaded_at >= since)
+        .group_by(User.username, func.date(Dataset.uploaded_at))
+        .all()
+    )
+    heatmap_data = json.dumps([
+        {"user": r.username, "day": str(r.day), "count": r.cnt}
+        for r in activity_rows
+    ])
+
+    # All non-admin usernames for heatmap y-axis order
+    heatmap_users = json.dumps([
+        u.username for u in
+        db.query(User).filter(User.role != "admin").order_by(User.username).all()
+    ])
+
+    # ── Chart 5: Top Users by Dataset Count ───────────────────────────────
+    top_users_rows = (
+        db.query(User.username, func.count(Dataset.id).label("cnt"))
+        .outerjoin(Dataset, Dataset.user_id == User.id)
+        .filter(User.role != "admin")
+        .group_by(User.id)
+        .order_by(func.count(Dataset.id).desc())
+        .all()
+    )
+    top_users_data = json.dumps([{"user": r.username, "count": r.cnt} for r in top_users_rows])
+
+    # ── Chart 6: Duplicate Rate Distribution ──────────────────────────────
+    datasets_with_rows = (
+        db.query(Dataset.row_count, Dataset.duplicate_records)
+        .filter(Dataset.row_count.isnot(None), Dataset.row_count > 0)
+        .all()
+    )
+    buckets = {"0-10": 0, "10-25": 0, "25-40": 0, "40-60": 0, "60+": 0}
+    for d in datasets_with_rows:
+        rate = (d.duplicate_records or 0) / d.row_count * 100
+        if rate <= 10:
+            buckets["0-10"] += 1
+        elif rate <= 25:
+            buckets["10-25"] += 1
+        elif rate <= 40:
+            buckets["25-40"] += 1
+        elif rate <= 60:
+            buckets["40-60"] += 1
+        else:
+            buckets["60+"] += 1
+    dup_dist_data = json.dumps([{"range": k, "count": v} for k, v in buckets.items()])
+
+    # ── Admin users list for sidebar ──────────────────────────────────────
+    admin_users = (
+        db.query(User, func.count(Dataset.id).label("cnt"))
+        .outerjoin(Dataset, Dataset.user_id == User.id)
+        .filter(User.role != "admin")
+        .group_by(User.id)
+        .order_by(User.username)
+        .all()
+    )
+
+    return templates.TemplateResponse("admin_overview.html", {
+        "request":          request,
+        "user":             admin,
+        "show_header":      True,
+        "admin_mode":       True,
+        "active_page":      "admin_overview",
+        "viewing_user":     None,
+        "admin_users":      admin_users,
+        # Stat cards
+        "total_users":      total_users,
+        "total_datasets":   total_datasets,
+        "total_rows":       f"{total_rows:,}" if total_rows else "0",
+        "most_active_user": most_active_user,
+        "most_active_count": most_active_count,
+        # Chart data (JSON strings for JS)
+        "cat_data":         cat_data,
+        "filetype_data":    filetype_data,
+        "heatmap_data":     heatmap_data,
+        "heatmap_users":    heatmap_users,
+        "top_users_data":   top_users_data,
+        "dup_dist_data":    dup_dist_data,
+    })
 
 
 @router.post("/select-user/{user_id}")

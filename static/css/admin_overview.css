@@ -1,0 +1,266 @@
+/* ============================================
+   ADMIN OVERVIEW DASHBOARD
+   Matches existing app color scheme
+   ============================================ */
+
+.ov-page {
+    padding: 28px 32px 48px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    max-width: 1100px;
+}
+
+/* ── Page Header ── */
+.ov-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 6px;
+}
+.ov-header-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+.ov-header-icon {
+    width: 40px; height: 40px;
+    background: #dbeafe;
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+}
+.ov-title {
+    font-size: 20px;
+    font-weight: 700;
+    color: #1e293b;
+    line-height: 1.2;
+}
+.ov-subtitle {
+    font-size: 12px;
+    color: #94a3b8;
+    margin-top: 2px;
+}
+.ov-time-pills {
+    display: flex;
+    gap: 6px;
+}
+.ov-pill {
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 500;
+    border: 1px solid #cbd5e1;
+    color: #475569;
+    background: #fff;
+    cursor: pointer;
+    transition: all .15s;
+}
+.ov-pill:hover { border-color: #3b82f6; color: #3b82f6; }
+.ov-pill.active { background: #3b82f6; border-color: #3b82f6; color: #fff; }
+
+/* ── Section Label ── */
+.ov-section-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: .8px;
+    border-bottom: 1px solid #e2e8f0;
+    padding-bottom: 6px;
+    margin-top: 6px;
+}
+
+/* ── Stat Cards ── */
+.ov-stat-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+}
+.ov-stat-card {
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 18px 20px;
+    border-top: 3px solid transparent;
+    position: relative;
+    transition: box-shadow .2s;
+}
+.ov-stat-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,.08); }
+.ov-blue   { border-top-color: #3b82f6; }
+.ov-green  { border-top-color: #10b981; }
+.ov-amber  { border-top-color: #f59e0b; }
+.ov-purple { border-top-color: #8b5cf6; }
+.ov-stat-icon {
+    font-size: 22px;
+    margin-bottom: 10px;
+    display: block;
+}
+.ov-stat-label {
+    font-size: 10.5px;
+    font-weight: 600;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: .6px;
+    margin-bottom: 4px;
+}
+.ov-stat-value {
+    font-size: 26px;
+    font-weight: 700;
+    color: #1e293b;
+    line-height: 1;
+    margin-bottom: 5px;
+}
+.ov-stat-name {
+    font-size: 18px;
+    padding-top: 4px;
+}
+.ov-stat-sub {
+    font-size: 11px;
+    color: #94a3b8;
+}
+
+/* ── Chart Cards ── */
+.ov-chart-card {
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    overflow: hidden;
+    transition: box-shadow .2s;
+}
+.ov-chart-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,.06); }
+.ov-chart-head {
+    padding: 16px 20px 0;
+}
+.ov-chart-title {
+    font-size: 13.5px;
+    font-weight: 600;
+    color: #1e293b;
+}
+.ov-chart-sub {
+    font-size: 11.5px;
+    color: #94a3b8;
+    margin-top: 2px;
+    margin-bottom: 14px;
+}
+.ov-chart-body {
+    padding: 0 20px 20px;
+}
+
+/* ── Donut Layout ── */
+.ov-chart-donut-wrap {
+    display: flex;
+    align-items: center;
+    gap: 36px;
+}
+.ov-donut-legend {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    flex: 1;
+}
+.ov-legend-item {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+}
+.ov-legend-dot {
+    width: 10px; height: 10px;
+    border-radius: 3px;
+    flex-shrink: 0;
+}
+.ov-legend-text {
+    font-size: 12.5px;
+    color: #475569;
+    flex: 1;
+}
+.ov-legend-pct {
+    font-size: 12.5px;
+    font-weight: 600;
+    color: #1e293b;
+    min-width: 36px;
+    text-align: right;
+}
+.ov-legend-count {
+    font-size: 11px;
+    color: #94a3b8;
+    min-width: 52px;
+    text-align: right;
+}
+
+/* ── Heatmap ── */
+.ov-heatmap-outer {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    overflow-x: auto;
+    padding-bottom: 4px;
+}
+.ov-hm-user-col {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    flex-shrink: 0;
+    padding-top: 1px;
+}
+.ov-hm-user-lbl {
+    font-size: 10.5px;
+    color: #64748b;
+    height: 15px;
+    display: flex;
+    align-items: center;
+    font-weight: 500;
+    white-space: nowrap;
+    min-width: 72px;
+}
+.ov-hm-grid {
+    display: grid;
+    grid-auto-flow: column;
+    gap: 3px;
+}
+.ov-hm-cell {
+    width: 15px; height: 15px;
+    border-radius: 3px;
+    background: #f1f5f9;
+    border: 1px solid #e2e8f0;
+    transition: transform .1s;
+    cursor: default;
+}
+.ov-hm-cell:hover { transform: scale(1.3); z-index: 2; }
+.ov-hm-l1 { background: #bfdbfe; border-color: #93c5fd; }
+.ov-hm-l2 { background: #60a5fa; border-color: #3b82f6; }
+.ov-hm-l3 { background: #2563eb; border-color: #1d4ed8; }
+.ov-hm-l4 { background: #1e3a8a; border-color: #1e3a8a; }
+.ov-hm-months {
+    display: flex;
+    gap: 0;
+    margin-top: 6px;
+    padding-left: 1px;
+}
+.ov-hm-months span {
+    font-size: 10px;
+    color: #94a3b8;
+    flex: 1;
+    min-width: 0;
+}
+.ov-heatmap-legend {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    margin-top: 10px;
+}
+.ov-heatmap-legend span {
+    font-size: 10.5px;
+    color: #94a3b8;
+}
+.ov-hm-swatch {
+    width: 12px; height: 12px;
+    border-radius: 2px;
+}
+
+/* ── Responsive ── */
+@media (max-width: 900px) {
+    .ov-stat-row { grid-template-columns: repeat(2, 1fr); }
+    .ov-chart-donut-wrap { flex-direction: column; align-items: flex-start; }
+    .ov-header { flex-direction: column; align-items: flex-start; gap: 12px; }
+}

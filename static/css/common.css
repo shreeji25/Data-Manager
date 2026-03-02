@@ -238,11 +238,11 @@ body {
 }
 
 .sidebar-header {
-    padding: 20px 16px;
+    padding: 16px 16px;
     border-bottom: 1px solid rgba(255,255,255,0.12);
     display: flex;
-    align-items: center;
-    justify-content: space-between;
+    flex-direction: column;
+    gap: 0;
     flex-shrink: 0;
 }
 
@@ -250,10 +250,13 @@ body {
     display: flex;
     align-items: center;
     gap: 8px;
-    font-size: 16px;
-    font-weight: 700;
-    color: #ffffff;  /* White text */
-    margin: 0;
+    font-size: 13px;
+    font-weight: 600;
+    color: #94a3b8;
+    margin: 14px 0 0 0;
+    padding: 0 2px;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
 }
 
 .sidebar-title svg {
@@ -369,6 +372,28 @@ body {
     background: #2B3EC1;
     transform: translateY(-1px);
     box-shadow: 0 4px 12px rgba(43, 62, 193, 0.5);
+}
+
+/* ── Cross-File Relations sidebar link ── */
+.rel-btn {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 9px 14px;
+    color: #94a3b8;
+    font-size: 13px;
+    font-weight: 500;
+    text-decoration: none;
+    border-radius: 7px;
+    transition: all .18s;
+    border: none;
+    background: none;
+    width: 100%;
+    text-align: left !important;
+}
+.rel-btn:hover {
+    color: #e2e8f0;
+    background: rgba(255,255,255,0.06);
 }
 
 /* Manage Users Button (Admin Sidebar) */
@@ -949,4 +974,43 @@ body:not(:has(.sidebar)) .main-content {
 /* ── Body background (light, clean contrast) ── */
 body, .bg {
     background: #f8fafc;
+}
+/* ============================================
+   ADMIN DASHBOARD BUTTON (sidebar top)
+   ============================================ */
+
+.btn-admin-overview {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    width: 100%;
+    padding: 9px 12px;
+    background: rgba(255,255,255,0.06);
+    color: #94a3b8;
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 7px;
+    font-size: 12.5px;
+    font-weight: 500;
+    text-decoration: none;
+    transition: all .18s;
+    margin-bottom: 4px;
+    cursor: pointer;
+}
+.btn-admin-overview:hover {
+    background: rgba(255,255,255,0.1);
+    color: #e2e8f0;
+    border-color: rgba(255,255,255,0.2);
+}
+.btn-admin-overview.active {
+    background: linear-gradient(135deg, #1e3a5f, #1d4ed8);
+    color: #fff;
+    border-color: #3b82f6;
+    box-shadow: 0 2px 8px rgba(59,130,246,0.3);
+}
+.btn-admin-overview svg {
+    flex-shrink: 0;
+    opacity: 0.7;
+}
+.btn-admin-overview.active svg {
+    opacity: 1;
 }

@@ -28,6 +28,8 @@ def landing_page(request: Request):
     """
     user = get_current_user(request)
     if user:
+        if user.get("role") == "admin":
+            return RedirectResponse("/admin/overview", status_code=302)
         return RedirectResponse("/dashboard", status_code=302)
 
     return templates.TemplateResponse(
@@ -45,6 +47,8 @@ def landing_page(request: Request):
 def login_page(request: Request):
     user = get_current_user(request)
     if user:
+        if user.get("role") == "admin":
+            return RedirectResponse("/admin/overview", status_code=302)
         return RedirectResponse("/dashboard", status_code=302)
     
     return templates.TemplateResponse(
@@ -102,6 +106,8 @@ async def login(request: Request, db: Session = Depends(get_db)):
         "full_name": user.full_name
     }
     
+    if user.role == "admin":
+        return RedirectResponse("/admin/overview", status_code=302)
     return RedirectResponse("/dashboard", status_code=302)
 
 
