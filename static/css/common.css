@@ -245,7 +245,6 @@ body {
     gap: 0;
     flex-shrink: 0;
 }
-
 .sidebar-title {
     display: flex;
     align-items: center;
@@ -253,7 +252,7 @@ body {
     font-size: 13px;
     font-weight: 600;
     color: #94a3b8;
-    margin: 14px 0 0 0;
+    margin: 14px 0 8px 0;  /* ← added 8px bottom margin for gap */
     padding: 0 2px;
     text-transform: uppercase;
     letter-spacing: 0.8px;
@@ -264,18 +263,19 @@ body {
 }
 
 .btn-add-category {
-    display: flex;
+    display: inline-flex;     /* ← inline-flex instead of flex */
     align-items: center;
-    gap: 6px;
-    padding: 6px 12px;
+    gap: 8px;                 /* ← reduced from 12px */
+    padding: 6px 14px;        /* ← smaller padding */
     background: #3D52D5;
     color: white;
     border: none;
     border-radius: 6px;
-    font-size: 13px;
+    font-size: 14px;          /* ← slightly smaller font */
     font-weight: 600;
     cursor: pointer;
     transition: all 0.2s;
+    width: auto;              /* ← don't stretch full width */
 }
 
 .btn-add-category:hover {

@@ -21,7 +21,7 @@
         <div class="ov-time-pills">
             <button class="ov-pill active" onclick="setRange(30, this)">30 days</button>
             <button class="ov-pill" onclick="setRange(90, this)">90 days</button>
-            <button class="ov-pill" onclick="setRange(365, this)">All time</button>
+            <button class="ov-pill" onclick="setRange(0, this)">All time</button>
         </div>
     </div>
 
@@ -30,26 +30,26 @@
         <div class="ov-stat-card ov-blue">
             <div class="ov-stat-icon">👥</div>
             <div class="ov-stat-label">Total Users</div>
-            <div class="ov-stat-value">{{ total_users }}</div>
+            <div class="ov-stat-value" id="stat-users">{{ total_users }}</div>
             <div class="ov-stat-sub">registered employees</div>
         </div>
         <div class="ov-stat-card ov-green">
             <div class="ov-stat-icon">📁</div>
             <div class="ov-stat-label">Total Datasets</div>
-            <div class="ov-stat-value">{{ total_datasets }}</div>
+            <div class="ov-stat-value" id="stat-datasets">{{ total_datasets }}</div>
             <div class="ov-stat-sub">across all users</div>
         </div>
         <div class="ov-stat-card ov-amber">
             <div class="ov-stat-icon">📋</div>
             <div class="ov-stat-label">Total Rows</div>
-            <div class="ov-stat-value">{{ total_rows }}</div>
+            <div class="ov-stat-value" id="stat-rows">{{ total_rows }}</div>
             <div class="ov-stat-sub">records in system</div>
         </div>
         <div class="ov-stat-card ov-purple">
             <div class="ov-stat-icon">🏆</div>
             <div class="ov-stat-label">Most Active</div>
-            <div class="ov-stat-value ov-stat-name">{{ most_active_user }}</div>
-            <div class="ov-stat-sub">{{ most_active_count }} datasets uploaded</div>
+            <div class="ov-stat-value ov-stat-name" id="stat-active-user">{{ most_active_user }}</div>
+            <div class="ov-stat-sub" id="stat-active-count">{{ most_active_count }} datasets uploaded</div>
         </div>
     </div>
 
@@ -103,7 +103,7 @@
         </div>
     </div>
 
-    <!-- Chart 6: Duplicate Rate Distribution -->
+    <!-- Chart 5: Duplicate Rate Distribution -->
     <div class="ov-section-label">Data Quality</div>
     <div class="ov-chart-card">
         <div class="ov-chart-head">
@@ -121,33 +121,34 @@
 {% block js %}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script>
-// ── Data from server ──────────────────────────────────────────────────────
-const CAT_DATA      = {{ cat_data | safe }};
-const FILETYPE_DATA = {{ filetype_data | safe }};
-const HEATMAP_DATA  = {{ heatmap_data | safe }};
-const HEATMAP_USERS = {{ heatmap_users | safe }};
-const TOP_USERS     = {{ top_users_data | safe }};
-const DUP_DIST      = {{ dup_dist_data | safe }};
+// ── Initial data from server (30-day default) ─────────────────────────────
+let CAT_DATA      = {{ cat_data | safe }};
+let FILETYPE_DATA = {{ filetype_data | safe }};
+let HEATMAP_DATA  = {{ heatmap_data | safe }};
+let HEATMAP_USERS = {{ heatmap_users | safe }};
+let TOP_USERS     = {{ top_users_data | safe }};
+let DUP_DIST      = {{ dup_dist_data | safe }};
 
-// ── Palette ───────────────────────────────────────────────────────────────
+// ── Palette & defaults ────────────────────────────────────────────────────
 const COLORS = ['#3b82f6','#10b981','#f59e0b','#8b5cf6','#ef4444','#06b6d4','#f97316','#84cc16','#ec4899','#6366f1'];
 Chart.defaults.font = { family: "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif", size: 11 };
 Chart.defaults.color = '#64748b';
 
-// ── Chart 1: Category Donut — Top 5 only ─────────────────────────────────
+// ── Chart instances (kept so we can destroy & redraw) ─────────────────────
+let chartCat, chartType, chartActivity, chartTopUsers, chartDupDist;
+
+// ── Build donut chart ─────────────────────────────────────────────────────
 function buildDonut(canvasId, legendId, data) {
-    // Slice to top 5, group rest as "Other"
     let chartData = data.slice(0, 5);
     if (data.length > 5) {
         const otherCount = data.slice(5).reduce((s, d) => s + d.count, 0);
         if (otherCount > 0) chartData.push({ name: 'Other', count: otherCount });
     }
-
     const labels = chartData.map(d => d.name);
     const values = chartData.map(d => d.count);
     const total  = values.reduce((a, b) => a + b, 0);
 
-    new Chart(document.getElementById(canvasId), {
+    const instance = new Chart(document.getElementById(canvasId), {
         type: 'doughnut',
         data: {
             labels,
@@ -166,15 +167,15 @@ function buildDonut(canvasId, legendId, data) {
                 legend: { display: false },
                 tooltip: {
                     callbacks: {
-                        label: ctx => ` ${ctx.label}: ${ctx.raw} (${Math.round(ctx.raw/total*100)}%)`
+                        label: ctx => ` ${ctx.label}: ${ctx.raw} (${Math.round(ctx.raw / total * 100)}%)`
                     }
                 }
             }
         }
     });
 
-    // Custom legend
     const legend = document.getElementById(legendId);
+    legend.innerHTML = '';
     chartData.forEach((d, i) => {
         const pct = total > 0 ? Math.round(d.count / total * 100) : 0;
         legend.innerHTML += `
@@ -185,20 +186,20 @@ function buildDonut(canvasId, legendId, data) {
                 <span class="ov-legend-count">${d.count} files</span>
             </div>`;
     });
+
+    return instance;
 }
-buildDonut('catChart',  'catLegend',  CAT_DATA);
-buildDonut('typeChart', 'typeLegend', FILETYPE_DATA);
 
-// ── Chart 3: User Activity — Stacked Weekly Bar ───────────────────────────
-(function buildActivityBar() {
-    if (!HEATMAP_USERS.length) return;
+// ── Build activity stacked bar ────────────────────────────────────────────
+function buildActivityBar(heatmapData, heatmapUsers) {
+    if (!heatmapUsers.length) return null;
 
-    // Build 12 week buckets ending today
     const today = new Date();
     const weeks = [];
     for (let w = 11; w >= 0; w--) {
+        // +1 so today always falls inside the last bucket
         const end = new Date(today);
-        end.setDate(today.getDate() - (w * 7));
+        end.setDate(today.getDate() - (w * 7) + 1);
         const start = new Date(end);
         start.setDate(end.getDate() - 6);
         weeks.push({
@@ -208,18 +209,15 @@ buildDonut('typeChart', 'typeLegend', FILETYPE_DATA);
         });
     }
 
-    // Build lookup: user+day → count
     const lookup = {};
-    HEATMAP_DATA.forEach(r => { lookup[`${r.user}|${r.day}`] = r.count; });
+    heatmapData.forEach(r => { lookup[`${r.user}|${r.day}`] = r.count; });
 
-    // One dataset per user — weekly totals
-    const datasets = HEATMAP_USERS.map((user, i) => ({
+    const datasets = heatmapUsers.map((user, i) => ({
         label: user,
         data: weeks.map(week => {
             let total = 0;
-            // Sum all days in this week
             const start = new Date(week.start);
-            for (let d = 0; d < 7; d++) {
+            for (let d = 0; d <= 6; d++) {
                 const day = new Date(start);
                 day.setDate(start.getDate() + d);
                 const key = day.toISOString().split('T')[0];
@@ -233,12 +231,9 @@ buildDonut('typeChart', 'typeLegend', FILETYPE_DATA);
         borderRadius: 3,
     }));
 
-    new Chart(document.getElementById('activityChart'), {
+    return new Chart(document.getElementById('activityChart'), {
         type: 'bar',
-        data: {
-            labels: weeks.map(w => w.label),
-            datasets,
-        },
+        data: { labels: weeks.map(w => w.label), datasets },
         options: {
             responsive: true,
             interaction: { mode: 'index', intersect: false },
@@ -251,87 +246,137 @@ buildDonut('typeChart', 'typeLegend', FILETYPE_DATA);
                 tooltip: {
                     callbacks: {
                         label: ctx => ` ${ctx.dataset.label}: ${ctx.raw} uploads`,
-                        footer: items => {
-                            const total = items.reduce((s, i) => s + i.raw, 0);
-                            return `Total: ${total} uploads`;
-                        }
+                        footer: items => `Total: ${items.reduce((s, i) => s + i.raw, 0)} uploads`
                     }
                 }
             },
             scales: {
-                x: {
-                    stacked: true,
-                    grid: { display: false },
-                },
-                y: {
-                    stacked: true,
-                    grid: { color: '#f1f5f9' },
-                    beginAtZero: true,
-                    ticks: { precision: 0 }
-                }
+                x: { stacked: true, grid: { display: false } },
+                y: { stacked: true, grid: { color: '#f1f5f9' }, beginAtZero: true, ticks: { precision: 0 } }
             }
         }
     });
-})();
+}
 
-// ── Chart 4: Top Users horizontal bar ────────────────────────────────────
-new Chart(document.getElementById('topUsersChart'), {
-    type: 'bar',
-    data: {
-        labels: TOP_USERS.map(d => d.user),
-        datasets: [{
-            label: 'Datasets',
-            data: TOP_USERS.map(d => d.count),
-            backgroundColor: COLORS.slice(0, TOP_USERS.length),
-            borderRadius: 4,
-            borderSkipped: false,
-        }]
-    },
-    options: {
-        indexAxis: 'y',
-        responsive: true,
-        plugins: {
-            legend: { display: false },
-            tooltip: { callbacks: { label: ctx => ` ${ctx.raw} datasets` } }
+// ── Build top users horizontal bar ───────────────────────────────────────
+function buildTopUsers(data) {
+    return new Chart(document.getElementById('topUsersChart'), {
+        type: 'bar',
+        data: {
+            labels: data.map(d => d.user),
+            datasets: [{
+                label: 'Datasets',
+                data: data.map(d => d.count),
+                backgroundColor: COLORS.slice(0, data.length),
+                borderRadius: 4,
+                borderSkipped: false,
+            }]
         },
-        scales: {
-            x: { grid: { color: '#f1f5f9' }, beginAtZero: true, ticks: { precision: 0 } },
-            y: { grid: { display: false } }
+        options: {
+            indexAxis: 'y',
+            responsive: true,
+            plugins: {
+                legend: { display: false },
+                tooltip: { callbacks: { label: ctx => ` ${ctx.raw} datasets` } }
+            },
+            scales: {
+                x: { grid: { color: '#f1f5f9' }, beginAtZero: true, ticks: { precision: 0 } },
+                y: { grid: { display: false } }
+            }
         }
-    }
-});
+    });
+}
 
-// ── Chart 5: Duplicate Rate Distribution ─────────────────────────────────
-const dupColors = ['#10b981','#10b981','#f59e0b','#f59e0b','#ef4444'];
-new Chart(document.getElementById('dupDistChart'), {
-    type: 'bar',
-    data: {
-        labels: DUP_DIST.map(d => d.range + '%'),
-        datasets: [{
-            label: 'Files',
-            data: DUP_DIST.map(d => d.count),
-            backgroundColor: dupColors,
-            borderRadius: 4,
-            borderSkipped: false,
-        }]
-    },
-    options: {
-        responsive: true,
-        plugins: {
-            legend: { display: false },
-            tooltip: { callbacks: { label: ctx => ` ${ctx.raw} files` } }
+// ── Build duplicate distribution bar ─────────────────────────────────────
+function buildDupDist(data) {
+    const dupColors = ['#10b981','#10b981','#f59e0b','#f59e0b','#ef4444'];
+    return new Chart(document.getElementById('dupDistChart'), {
+        type: 'bar',
+        data: {
+            labels: data.map(d => d.range + '%'),
+            datasets: [{
+                label: 'Files',
+                data: data.map(d => d.count),
+                backgroundColor: dupColors,
+                borderRadius: 4,
+                borderSkipped: false,
+            }]
         },
-        scales: {
-            x: { grid: { display: false } },
-            y: { grid: { color: '#f1f5f9' }, beginAtZero: true, ticks: { precision: 0 } }
+        options: {
+            responsive: true,
+            plugins: {
+                legend: { display: false },
+                tooltip: { callbacks: { label: ctx => ` ${ctx.raw} files` } }
+            },
+            scales: {
+                x: { grid: { display: false } },
+                y: { grid: { color: '#f1f5f9' }, beginAtZero: true, ticks: { precision: 0 } }
+            }
         }
-    }
-});
+    });
+}
 
-// ── Time range pill switcher ──────────────────────────────────────────────
+// ── Destroy all charts & rebuild with new data ────────────────────────────
+function rebuildAllCharts(data) {
+    // Destroy existing instances
+    [chartCat, chartType, chartActivity, chartTopUsers, chartDupDist].forEach(c => {
+        if (c) c.destroy();
+    });
+
+    chartCat      = buildDonut('catChart',  'catLegend',  data.cat_data);
+    chartType     = buildDonut('typeChart', 'typeLegend', data.filetype_data);
+    chartActivity = buildActivityBar(data.heatmap_data, data.heatmap_users);
+    chartTopUsers = buildTopUsers(data.top_users_data);
+    chartDupDist  = buildDupDist(data.dup_dist_data);
+}
+
+// ── Update stat cards ─────────────────────────────────────────────────────
+function updateStatCards(data) {
+    document.getElementById('stat-users').textContent        = data.total_users;
+    document.getElementById('stat-datasets').textContent     = data.total_datasets;
+    document.getElementById('stat-rows').textContent         = data.total_rows;
+    document.getElementById('stat-active-user').textContent  = data.most_active_user;
+    document.getElementById('stat-active-count').textContent = data.most_active_count + ' datasets uploaded';
+}
+
+// ── Time range pill handler ───────────────────────────────────────────────
 function setRange(days, btn) {
+    // Toggle active pill
     document.querySelectorAll('.ov-pill').forEach(p => p.classList.remove('active'));
     btn.classList.add('active');
+    btn.disabled = true;
+    btn.style.opacity = '0.6';
+
+    fetch(`/admin/overview/stats?days=${days}`)
+        .then(res => {
+            if (!res.ok) throw new Error('Server error ' + res.status);
+            return res.json();
+        })
+        .then(data => {
+            updateStatCards(data);
+            rebuildAllCharts(data);
+            if (typeof Toast !== 'undefined') {
+                const label = days === 0 ? 'All time' : `Last ${days} days`;
+                Toast.info('Dashboard updated', `Showing data for: ${label}`);
+            }
+        })
+        .catch(err => {
+            if (typeof Toast !== 'undefined') {
+                Toast.error('Update failed', 'Could not load new data. Please try again.');
+            }
+            console.error('setRange error:', err);
+        })
+        .finally(() => {
+            btn.disabled = false;
+            btn.style.opacity = '';
+        });
 }
+
+// ── Initial render ────────────────────────────────────────────────────────
+chartCat      = buildDonut('catChart',  'catLegend',  CAT_DATA);
+chartType     = buildDonut('typeChart', 'typeLegend', FILETYPE_DATA);
+chartActivity = buildActivityBar(HEATMAP_DATA, HEATMAP_USERS);
+chartTopUsers = buildTopUsers(TOP_USERS);
+chartDupDist  = buildDupDist(DUP_DIST);
 </script>
 {% endblock %}
