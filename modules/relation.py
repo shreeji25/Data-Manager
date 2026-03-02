@@ -197,16 +197,27 @@ def duplicate_contact_view(
         return RedirectResponse("/login", status_code=302)
 
     effective_user = get_effective_user(request, db)
-    if not effective_user:
+    is_admin = user.get("role") == "admin"
+
+    # Admin with no selected user → access any dataset directly by ID
+    if not effective_user and not is_admin:
         raise HTTPException(status_code=403, detail="Select a user first")
 
-    dataset = db.query(Dataset).filter(
-        Dataset.id == dataset_id,
-        Dataset.user_id == effective_user.id,
-    ).first()
+    if is_admin and not effective_user:
+        dataset = db.query(Dataset).filter(Dataset.id == dataset_id).first()
+    else:
+        dataset = db.query(Dataset).filter(
+            Dataset.id == dataset_id,
+            Dataset.user_id == effective_user.id,
+        ).first()
 
     if not dataset:
         raise HTTPException(status_code=404, detail="Dataset not found")
+
+    # If admin with no selected user, resolve viewing_user from dataset owner
+    if not effective_user:
+        from models import User
+        effective_user = db.query(User).filter(User.id == dataset.user_id).first()
 
     # ── Resolve file path ─────────────────────────────────────────────────
     abs_path = _resolve_path(dataset.file_path)
@@ -321,13 +332,18 @@ def get_duplicate_records(
         return {"error": "Not authenticated"}
 
     effective_user = get_effective_user(request, db)
-    if not effective_user:
+    is_admin = user.get("role") == "admin"
+
+    if not effective_user and not is_admin:
         return {"error": "Not authenticated"}
 
-    dataset = db.query(Dataset).filter(
-        Dataset.id == dataset_id,
-        Dataset.user_id == effective_user.id,
-    ).first()
+    if is_admin and not effective_user:
+        dataset = db.query(Dataset).filter(Dataset.id == dataset_id).first()
+    else:
+        dataset = db.query(Dataset).filter(
+            Dataset.id == dataset_id,
+            Dataset.user_id == effective_user.id,
+        ).first()
 
     if not dataset:
         return {"error": "Dataset not found"}

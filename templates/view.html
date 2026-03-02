@@ -257,6 +257,12 @@
                 <a href="/dataset/{{ dataset.id }}/relations" class="isb-full-btn" style="margin-top:16px;">
                     Open Full Relations Page →
                 </a>
+
+                {% if admin_mode %}
+                <a href="/cross-relations" class="isb-full-btn" style="margin-top:8px; background: linear-gradient(135deg, #1e293b, #334155); color:#fff;">
+                    🔗 Cross-File Relations (All Users) →
+                </a>
+                {% endif %}
             </div>
 
             <!-- ══ PANEL 4: VISUALISATION ══ -->
