@@ -17,7 +17,7 @@ from fastapi import APIRouter, Depends, Request, Form
 from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
-from sqlalchemy import and_, func
+from sqlalchemy import and_, func, distinct
 
 from auth import get_current_user
 from database import get_db
@@ -81,6 +81,7 @@ def dashboard(
     min_rows: str = "",
     max_rows: str = "",
     has_duplicates: int = 0,
+    selected_user: int = 0,
     db: Session = Depends(get_db),
 ):
     # ── Auth ─────────────────────────────────────────────────────────────────
@@ -98,12 +99,19 @@ def dashboard(
     # Sidebar context (admin_users with counts, or categories for normal user)
     sidebar = get_sidebar_context(request, db, current_user)
 
-    # ── Admin with no user selected → Show ALL datasets ─────────────────────────
-    if is_admin and not effective_user:
-        # Admin sees ALL datasets from ALL users
-        total_datasets = db.query(func.count(Dataset.id)).scalar()
-        
-        # Parse filter params
+    # ── ADMIN DASHBOARD ──────────────────────────────────────────────────────
+    if is_admin:
+        # Resolve which user is selected (query param takes priority over session)
+        selected_user_obj = None
+        selected_user_name = None
+
+        # selected_user query param = user chosen from dropdown
+        if selected_user:
+            selected_user_obj = db.query(User).filter(User.id == selected_user).first()
+            if selected_user_obj:
+                selected_user_name = selected_user_obj.username
+
+        # ── Parse filter params ───────────────────────────────────────────
         try:
             min_rows_val = int(min_rows) if min_rows else None
             max_rows_val = int(max_rows) if max_rows else None
@@ -116,10 +124,16 @@ def dashboard(
         except (ValueError, TypeError):
             from_date_val = to_date_val = None
 
-        # Build filtered query - ALL users
+        # ── Build dataset query ───────────────────────────────────────────
+        # Always start from ALL datasets, then filter by selected user if chosen
         query = db.query(Dataset).join(User, Dataset.user_id == User.id)
 
         filters = []
+        if selected_user_obj:
+            # User selected from dropdown — show only that user's files
+            filters.append(Dataset.user_id == selected_user_obj.id)
+        # No user selected = show ALL files from ALL users (All Files)
+
         if q:
             filters.append(Dataset.file_name.ilike(f"%{q}%"))
         if category:
@@ -138,7 +152,10 @@ def dashboard(
         if filters:
             query = query.filter(and_(*filters))
 
-        # Pagination
+        # Total datasets count (always system-wide for admin KPI)
+        total_datasets = db.query(func.count(Dataset.id)).scalar()
+
+        # ── Pagination ────────────────────────────────────────────────────
         total = query.count()
         total_pages = max(1, math.ceil(total / PAGE_SIZE))
         page = max(1, min(page, total_pages))
@@ -151,18 +168,31 @@ def dashboard(
             .all()
         )
 
-        # Get all categories from all users for filter dropdown
-        all_categories = (
-            db.query(Category)
-            .order_by(Category.name)
+        # ── ALL system-wide categories (from Dataset.department) ──────────
+        # Always shows ALL categories from ALL users regardless of user filter
+        # Query all unique department values from datasets table directly
+        dept_rows = (
+            db.query(Dataset.department)
+            .filter(Dataset.department.isnot(None))
+            .filter(Dataset.department != "")
+            .group_by(Dataset.department)
+            .order_by(Dataset.department)
             .all()
         )
+
+        print(f"DEBUG categories found: {[r[0] for r in dept_rows]}")
+
+        class _Cat:
+            def __init__(self, name):
+                self.name = name
+
+        all_categories = [_Cat(row[0]) for row in dept_rows if row[0]]
 
         context = {
             "request": request,
             "user": user,
             "datasets": datasets,
-            "categories": all_categories,
+            "categories": all_categories,          # ALL system categories
             "category_counts": {},
             "total_datasets": total_datasets,
             "page": page,
@@ -175,13 +205,21 @@ def dashboard(
             "max_rows": max_rows_val or "",
             "has_duplicates": has_duplicates,
             "admin_mode": True,
-            "viewing_user": None,
+            "viewing_user": selected_user_obj,     # None = all files, obj = specific user
             "show_header": True,
+            "selected_user_id": selected_user_obj.id if selected_user_obj else None,
+            "selected_user_name": selected_user_name,
+            "sort_by": "",
+            "sort_dir": "asc",
         }
+        # Remove keys that admin context already sets correctly
+        # sidebar["categories"] = [] for admin which would wipe our all_categories
+        sidebar.pop("selected_user_id", None)
+        sidebar.pop("categories", None)
         context.update(sidebar)
         return templates.TemplateResponse("dashboard.html", context)
 
-    # ── Normal user or admin with selected user ───────────────────────────
+    # ── NORMAL USER DASHBOARD ─────────────────────────────────────────────
     user_id = effective_user.id
 
     # Category counts (category name → dataset count) for sidebar badges
@@ -254,7 +292,7 @@ def dashboard(
         .all()
     )
 
-    # Categories for the filter dropdown (scoped to effective_user)
+    # Categories for the filter dropdown (scoped to this user)
     user_categories = (
         db.query(Category)
         .filter(Category.user_id == user_id)
@@ -279,10 +317,15 @@ def dashboard(
         "min_rows": min_rows_val or "",
         "max_rows": max_rows_val or "",
         "has_duplicates": has_duplicates,
-        "admin_mode": is_admin,
+        "admin_mode": False,
         "viewing_user": effective_user,
         "show_header": True,
+        "selected_user_id": None,
+        "selected_user_name": None,
+        "sort_by": "",
+        "sort_dir": "asc",
     }
+    sidebar.pop("selected_user_id", None)
     context.update(sidebar)
 
     return templates.TemplateResponse("dashboard.html", context)
