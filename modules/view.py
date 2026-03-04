@@ -157,10 +157,19 @@ def view_dataset(
     db.commit()
     print(f"💾 Database updated: row_count={total_records}, duplicates={duplicate_records}, actual={actual_records}")
     
+    # Mark exact duplicate rows in df using the indices from detect_exact_duplicates
+    if exact_dup_data["duplicate_indices"]:
+        df["__exact_dup__"] = df.index.isin(exact_dup_data["duplicate_indices"])
+    else:
+        df["__exact_dup__"] = False
+
     # Filter based on mode
     if show == "duplicates":
         df = df[df["__dup_combined__"] == True]
         print(f"🔍 Filtered to duplicates only: {len(df)} rows")
+    elif show == "exact":
+        df = df[df["__exact_dup__"] == True]
+        print(f"🔍 Filtered to exact duplicates only: {len(df)} rows")
     
     # Pagination
     rows_per_page = 10
