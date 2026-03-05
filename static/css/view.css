@@ -29,7 +29,8 @@ body {
 
 /* ── 2. PAGE WRAPPER ──────────────────────────────────────── */
 .view-page {
-    height: 100% !important;
+    flex: 1 1 auto !important;
+    min-height: 0 !important;
     display: flex !important;
     flex-direction: column !important;
     overflow: hidden !important;
@@ -164,9 +165,8 @@ body {
 
 /* ── 6. TABLE CARD (scrollable) ───────────────────────────── */
 .view-table-card {
-    flex: 1 1 auto !important;
-    min-height: 200px !important;
-    max-height: calc(100vh - 350px) !important;
+    flex: 1 1 0 !important;
+    min-height: 0 !important;
     display: flex !important;
     flex-direction: column !important;
     overflow: hidden !important;
@@ -334,11 +334,10 @@ body {
 .pagination {
     flex-shrink: 0 !important;
     flex-grow: 0 !important;
-    min-height: 60px !important;
     display: flex !important;
     justify-content: center !important;
     align-items: center !important;
-    padding: 12px 0 16px 0 !important;
+    padding: 10px 0 12px 0 !important;
     margin: 0 !important;
     background: transparent !important;
     position: relative !important;
@@ -482,7 +481,10 @@ body {
 .view-main {
     flex: 1 1 auto !important;
     min-width: 0 !important;
+    min-height: 0 !important;
     overflow: hidden !important;
+    display: flex !important;
+    flex-direction: column !important;
     transition: margin-right 0.3s ease !important;
 }
 
@@ -911,3 +913,12 @@ body {
 }
 .isb-empty svg { margin-bottom: 8px; }
 .isb-empty p { margin: 0; }
+
+/* ── Search bar — must not shrink the table area ── */
+.view-search-bar {
+    flex-shrink: 0 !important;
+    flex-grow: 0 !important;
+    padding: 10px 14px 8px !important;
+    border-bottom: 1px solid #f1f5f9 !important;
+    box-sizing: border-box !important;
+}

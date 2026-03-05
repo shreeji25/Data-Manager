@@ -8,6 +8,181 @@
     <link rel="stylesheet" href="/static/css/loading.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <link rel="icon" href="data:,">
+<style>
+/* ── Live Search Bar ─────────────────────────────────────────── */
+.view-search-bar {
+    padding: 14px 18px 10px;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.view-search-inner {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: #f8fafc;
+    border: 1.5px solid #e5e7eb;
+    border-radius: 10px;
+    padding: 9px 14px;
+    transition: border-color 0.18s, box-shadow 0.18s;
+}
+
+.view-search-inner:focus-within {
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102,126,234,0.12);
+    background: #fff;
+}
+
+.view-search-icon {
+    color: #9ca3af;
+    flex-shrink: 0;
+    transition: color 0.18s;
+}
+
+.view-search-inner:focus-within .view-search-icon {
+    color: #667eea;
+}
+
+.view-search-input {
+    flex: 1;
+    border: none;
+    background: transparent;
+    font-size: 13.5px;
+    color: #1f2937;
+    outline: none;
+    min-width: 0;
+}
+
+.view-search-input::placeholder {
+    color: #b0b7c3;
+}
+
+.view-search-count {
+    font-size: 12px;
+    color: #667eea;
+    font-weight: 600;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.view-search-clear {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #9ca3af;
+    padding: 2px;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    transition: color 0.15s, background 0.15s;
+    flex-shrink: 0;
+}
+
+.view-search-clear:hover {
+    color: #ef4444;
+    background: #fef2f2;
+}
+
+/* highlight matched text */
+.search-highlight {
+    background: #fef08a;
+    color: #1f2937;
+    border-radius: 2px;
+    padding: 0 1px;
+}
+
+/* No results empty state */
+.view-search-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: 32px;
+    color: #9ca3af;
+    font-size: 13.5px;
+}
+
+.view-search-empty p {
+    margin: 0;
+    color: #6b7280;
+}
+
+.view-search-empty span {
+    font-weight: 600;
+    color: #374151;
+}
+
+.view-search-result-info {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 8px;
+    font-size: 12.5px;
+    color: #6b7280;
+    padding: 0 2px;
+}
+
+.view-search-result-info strong {
+    color: #374151;
+}
+
+.view-search-result-info svg {
+    color: #667eea;
+    flex-shrink: 0;
+}
+
+/* Rows per page dropdown */
+.view-search-bar .view-search-inner {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.per-page-wrap {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+    padding-left: 10px;
+    border-left: 1.5px solid #e5e7eb;
+    margin-left: 4px;
+}
+
+.per-page-label {
+    font-size: 12px;
+    color: #9ca3af;
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+.per-page-select {
+    border: 1.5px solid #e5e7eb;
+    border-radius: 7px;
+    background: white;
+    color: #374151;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 5px 10px;
+    cursor: pointer;
+    outline: none;
+    transition: border-color 0.15s;
+    appearance: auto;
+}
+
+.per-page-select:hover,
+.per-page-select:focus {
+    border-color: #667eea;
+    color: #667eea;
+}
+
+/* Highlight matched text in cells */
+mark.search-highlight {
+    background: #fef08a;
+    color: #1f2937;
+    border-radius: 2px;
+    padding: 0 2px;
+    font-weight: 600;
+}
+</style>
 </head>
 
 <body class="bg">
@@ -49,13 +224,13 @@
                 <span class="stat-label">Clean Records</span>
                 <span class="stat-value">{{ dataset.actual_records | default(0) }}</span>
             </div>
-            <a href="?page=1&show={% if show == 'duplicates' %}all{% else %}duplicates{% endif %}" style="flex:1;text-decoration:none;display:flex;">
+            <a href="?page=1&per_page={{ per_page }}&show={% if show == 'duplicates' %}all{% else %}duplicates{% endif %}{% if search %}&search={{ search }}{% endif %}" style="flex:1;text-decoration:none;display:flex;">
                 <div class="stat-card stat-danger" style="flex:1;">
                     <span class="stat-label">{% if show == 'duplicates' %}← Show All{% else %}Phone/Email Dups{% endif %}</span>
                     <span class="stat-value">{{ dataset.duplicate_records | default(0) }}</span>
                 </div>
             </a>
-            <a href="?page=1&show={% if show == 'exact' %}all{% else %}exact{% endif %}" style="flex:1;text-decoration:none;display:flex;">
+            <a href="?page=1&per_page={{ per_page }}&show={% if show == 'exact' %}all{% else %}exact{% endif %}{% if search %}&search={{ search }}{% endif %}" style="flex:1;text-decoration:none;display:flex;">
                 <div class="stat-card stat-exact" style="flex:1;">
                     <span class="stat-label">{% if show == 'exact' %}← Show All{% else %}Exact Dups{% endif %}</span>
                     <span class="stat-value">{{ exact_dup_count | default(0) }}</span>
@@ -65,6 +240,57 @@
 
         <!-- ═══════════════ TABLE ═══════════════ -->
         <div class="card view-table-card">
+
+            <!-- Server-side Search Bar -->
+            <div class="view-search-bar">
+                <div class="view-search-inner">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="view-search-icon">
+                        <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                    </svg>
+                    <input
+                        type="text"
+                        id="liveSearchInput"
+                        class="view-search-input"
+                        placeholder="Search across all columns..."
+                        value="{{ search or '' }}"
+                        autocomplete="off"
+                    >
+                    {% if search %}
+                    <span class="view-search-count">{{ rows|length }} of {{ total_matched }} rows on this page</span>
+                    {% endif %}
+                    <button class="view-search-clear" id="searchClearBtn" onclick="clearSearch()" title="Clear search" style="{{ 'display:flex' if search else 'display:none' }}">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                        </svg>
+                    </button>
+                <!-- Rows per page dropdown -->
+                <div class="per-page-wrap">
+                    <label class="per-page-label">Rows</label>
+                    <select class="per-page-select" onchange="changePerPage(this.value)">
+                        {% for opt in [10, 20, 50, 100, 150] %}
+                        <option value="{{ opt }}" {% if per_page == opt %}selected{% endif %}>{{ opt }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+                {% if search %}
+                <div class="view-search-result-info">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                    <strong>{{ total_matched }}</strong> rows matched "<strong>{{ search }}</strong>" across all {{ total_pages }} page{{ 's' if total_pages != 1 else '' }}
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- No results message -->
+            {% if search and not rows %}
+            <div class="view-search-empty">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="1.5">
+                    <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                </svg>
+                <p>No rows match "<strong>{{ search }}</strong>"</p>
+            </div>
+            {% endif %}
+
             <div class="view-table-scroll">
                 <table class="view-table">
                     <thead>
@@ -110,23 +336,23 @@
                 <span class="page-btn page-nav disabled">‹ Previous</span>
                 {% endif %}
 
-                <a href="?show={{ show or '' }}&page=1" class="page-btn {% if page == 1 %}active{% endif %}">1</a>
+                <a href="?show={{ show or '' }}&page=1&per_page={{ per_page }}{% if search %}&search={{ search }}{% endif %}" class="page-btn {% if page == 1 %}active{% endif %}">1</a>
                 {% if page > 4 %}<span class="page-btn dots">...</span>{% endif %}
 
                 {% set win_start = [page - 1, 2] | max %}
                 {% set win_end   = [page + 1, total_pages - 1] | min %}
                 {% for p in range(win_start, win_end + 1) %}
-                <a href="?show={{ show or '' }}&page={{ p }}" class="page-btn {% if p == page %}active{% endif %}">{{ p }}</a>
+                <a href="?show={{ show or '' }}&page={{ p }}&per_page={{ per_page }}{% if search %}&search={{ search }}{% endif %}" class="page-btn {% if p == page %}active{% endif %}">{{ p }}</a>
                 {% endfor %}
 
                 {% if page < total_pages - 3 %}<span class="page-btn dots">...</span>{% endif %}
 
                 {% if total_pages > 1 %}
-                <a href="?show={{ show or '' }}&page={{ total_pages }}" class="page-btn {% if page == total_pages %}active{% endif %}">{{ total_pages }}</a>
+                <a href="?show={{ show or '' }}&page={{ total_pages }}&per_page={{ per_page }}{% if search %}&search={{ search }}{% endif %}" class="page-btn {% if page == total_pages %}active{% endif %}">{{ total_pages }}</a>
                 {% endif %}
 
                 {% if page < total_pages %}
-                <a href="?show={{ show or '' }}&page={{ page + 1 }}" class="page-btn page-nav">Next ›</a>
+                <a href="?show={{ show or '' }}&page={{ page + 1 }}&per_page={{ per_page }}{% if search %}&search={{ search }}{% endif %}" class="page-btn page-nav">Next ›</a>
                 {% else %}
                 <span class="page-btn page-nav disabled">Next ›</span>
                 {% endif %}
@@ -426,6 +652,104 @@ function initCharts() {
             }
         });
     }
+}
+</script>
+<script>
+// ── Server-side Search (debounced) ───────────────────────────────────────
+(function () {
+    const input    = document.getElementById('liveSearchInput');
+    const clearBtn = document.getElementById('searchClearBtn');
+    let debounceTimer = null;
+
+    function submitSearch(value) {
+        const params = new URLSearchParams(window.location.search);
+        const q = value.trim();
+        if (q) {
+            params.set('search', q);
+        } else {
+            params.delete('search');
+        }
+        params.set('page', '1');  // always reset to page 1 on new search
+        // per_page is already in params from URL, preserved automatically
+        window.location.search = params.toString();
+    }
+
+    // Debounce — wait 400ms after user stops typing before firing
+    input.addEventListener('input', function () {
+        const val = this.value;
+        clearBtn.style.display = val ? 'flex' : 'none';
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(() => submitSearch(val), 400);
+    });
+
+    window.clearSearch = function () {
+        input.value = '';
+        submitSearch('');
+    };
+
+    // Keyboard shortcuts
+    document.addEventListener('keydown', function (e) {
+        // Ctrl+F / Cmd+F → focus search
+        if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
+            e.preventDefault();
+            input.focus();
+            input.select();
+        }
+        // Escape → clear if focused
+        if (e.key === 'Escape' && document.activeElement === input) {
+            window.clearSearch();
+        }
+    });
+
+    // Auto-focus if search is active
+    if (input.value) {
+        input.focus();
+        highlightMatches(input.value);
+    }
+})();
+
+// ── Highlight matched text in table cells ────────────────────────────────
+function highlightMatches(query) {
+    if (!query || !query.trim()) return;
+    const q = query.trim().toLowerCase();
+
+    document.querySelectorAll('.view-table tbody tr').forEach(function(tr) {
+        tr.querySelectorAll('td').forEach(function(td) {
+            const text = td.textContent;
+            const lower = text.toLowerCase();
+            const idx = lower.indexOf(q);
+            if (idx !== -1) {
+                const before = escHtml(text.slice(0, idx));
+                const match  = escHtml(text.slice(idx, idx + q.length));
+                const after  = escHtml(text.slice(idx + q.length));
+                td.innerHTML = before + '<mark class="search-highlight">' + match + '</mark>' + after;
+            }
+        });
+    });
+}
+
+function escHtml(str) {
+    return str
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+}
+
+// Run highlight on page load if search is active
+document.addEventListener('DOMContentLoaded', function() {
+    const input = document.getElementById('liveSearchInput');
+    if (input && input.value.trim()) {
+        highlightMatches(input.value);
+    }
+});
+
+// Change rows per page — reset to page 1
+function changePerPage(val) {
+    const params = new URLSearchParams(window.location.search);
+    params.set('per_page', val);
+    params.set('page', '1');
+    window.location.search = params.toString();
 }
 </script>
 </body>

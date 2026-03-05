@@ -59,8 +59,12 @@ def view_dataset(
     print(f"📂 Loading dataset: {dataset.file_name} (owner id={owner_id})")
     
     # Query params
-    show = request.query_params.get("show")
-    page = int(request.query_params.get("page", 1))
+    show     = request.query_params.get("show")
+    page     = int(request.query_params.get("page", 1))
+    search   = request.query_params.get("search", "").strip()
+    per_page = int(request.query_params.get("per_page", 10))
+    if per_page not in [10, 20, 50, 100, 150]:
+        per_page = 10
     
     # ── Resolve paths ────────────────────────────────────────────────────
     # Always prefer the cleaned (header-corrected) file if it exists.
@@ -170,12 +174,32 @@ def view_dataset(
     elif show == "exact":
         df = df[df["__exact_dup__"] == True]
         print(f"🔍 Filtered to exact duplicates only: {len(df)} rows")
-    
+
+    # ── Live search filter (across all non-internal columns) ─────────────
+    if search:
+        internal_cols = [c for c in df.columns if c.startswith("__")]
+        data_cols = [c for c in df.columns if c not in internal_cols]
+        search_lower = search.lower()
+        # Use regex=False for plain text matching (no regex special chars)
+        # Check each cell: convert to str, lowercase, check plain substring
+        mask = df[data_cols].apply(
+            lambda col: col.astype(str).str.lower().str.contains(
+                search_lower, case=False, na=False, regex=False
+            )
+        ).any(axis=1)
+        df = df[mask]
+        # Reset page to 1 if current page exceeds new total
+        new_total_pages = max(1, math.ceil(len(df) / per_page))
+        if page > new_total_pages:
+            page = 1
+        print(f"🔍 Search '{search}': {len(df)} rows matched")
+
     # Pagination
-    rows_per_page = 10
-    total = len(df)
+    rows_per_page = per_page
+    total_matched = len(df)   # total rows after all filters (show + search)
+    total = total_matched
     total_pages = max(1, math.ceil(total / rows_per_page))
-    
+
     start = (page - 1) * rows_per_page
     end = start + rows_per_page
     df_page = df.iloc[start:end]
@@ -199,6 +223,9 @@ def view_dataset(
         "start_page": start_page,
         "end_page": end_page,
         "show": show,
+        "search": search,
+        "total_matched": total_matched,
+        "per_page": per_page,
         "show_header": False,
         "show_sidebar": False,
         "admin_mode": is_admin,
