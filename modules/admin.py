@@ -35,9 +35,10 @@ def _build_stats(db: Session, days: int) -> dict:
     days=90  → last 90 days
     days=0   → all time (no date filter)
     """
-    # Use midnight today as cutoff base so uploads from today are always included
+    # Use end of today (23:59:59) so uploads made TODAY are always included
     today_midnight = datetime.combine(date.today(), datetime.min.time())
-    since = today_midnight - timedelta(days=days) if days > 0 else None
+    today_end = datetime.combine(date.today(), datetime.max.time().replace(microsecond=0))
+    since = today_midnight - timedelta(days=days - 1) if days > 0 else None
 
     def date_filter(col):
         """Returns a SQLAlchemy filter or None depending on range."""
@@ -101,21 +102,22 @@ def _build_stats(db: Session, days: int) -> dict:
     filetype_data = [{"name": k, "count": v} for k, v in type_counts.items() if v > 0]
 
     # ── User Activity Heatmap ─────────────────────────────────────────────
-    # Always show last 84 days of activity (12 weeks) but respect pill filter
-    heatmap_since = since if since else (today_midnight - timedelta(days=84))
+    # Always show last 84 days (12 weeks) ending TODAY for the activity chart
+    heatmap_since = today_midnight - timedelta(days=83)  # 84 days inclusive of today
+    from sqlalchemy import cast, Date as SADate
     activity_rows = (
         db.query(
             User.username,
-            func.date(Dataset.uploaded_at).label("day"),
+            cast(Dataset.uploaded_at, SADate).label("day"),  # works on PostgreSQL & SQLite
             func.count(Dataset.id).label("cnt"),
         )
         .join(Dataset, Dataset.user_id == User.id)
         .filter(User.role != "admin", Dataset.uploaded_at >= heatmap_since)
-        .group_by(User.username, func.date(Dataset.uploaded_at))
+        .group_by(User.username, cast(Dataset.uploaded_at, SADate))
         .all()
     )
     heatmap_data = [
-        {"user": r.username, "day": str(r.day), "count": r.cnt}
+        {"user": r.username, "day": str(r.day), "count": r.cnt}  # str(date) → "YYYY-MM-DD"
         for r in activity_rows
     ]
 

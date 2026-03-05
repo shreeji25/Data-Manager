@@ -4,6 +4,7 @@
 
 {% block css %}
 <link rel="stylesheet" href="/static/css/admin_overview.css">
+
 {% endblock %}
 
 {% block content %}
@@ -19,9 +20,9 @@
             </div>
         </div>
         <div class="ov-time-pills">
-            <button class="ov-pill active" onclick="setRange(30, this)">30 days</button>
-            <button class="ov-pill" onclick="setRange(90, this)">90 days</button>
-            <button class="ov-pill" onclick="setRange(0, this)">All time</button>
+            <button class="ov-pill active" id="pill-30" onclick="setRange(30, this)">30 days</button>
+            <button class="ov-pill" id="pill-90" onclick="setRange(90, this)">90 days</button>
+            <button class="ov-pill" id="pill-0" onclick="setRange(0, this)">All time</button>
         </div>
     </div>
 
@@ -52,6 +53,7 @@
             <div class="ov-stat-sub" id="stat-active-count">{{ most_active_count }} datasets uploaded</div>
         </div>
     </div>
+
 
     <!-- Chart 1: Category Distribution -->
     <div class="ov-section-label">Categories</div>
@@ -194,18 +196,28 @@ function buildDonut(canvasId, legendId, data) {
 function buildActivityBar(heatmapData, heatmapUsers) {
     if (!heatmapUsers.length) return null;
 
-    const today = new Date();
+    // Helper: get local YYYY-MM-DD without UTC shift
+    function localDateStr(d) {
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${y}-${m}-${day}`;
+    }
+
+    // Anchor last bucket end = today (local), so uploads today always show
+    const todayLocal = new Date();
+    todayLocal.setHours(0, 0, 0, 0);
     const weeks = [];
     for (let w = 11; w >= 0; w--) {
-        // +1 so today always falls inside the last bucket
-        const end = new Date(today);
-        end.setDate(today.getDate() - (w * 7) + 1);
+        const end = new Date(todayLocal);
+        end.setDate(todayLocal.getDate() - (w * 7));
         const start = new Date(end);
         start.setDate(end.getDate() - 6);
         weeks.push({
-            label: start.toLocaleString('default', { month: 'short', day: 'numeric' }),
-            start: start.toISOString().split('T')[0],
-            end:   end.toISOString().split('T')[0],
+            label: start.toLocaleString('default', { month: 'short', day: 'numeric' })
+                   + '–' + end.toLocaleString('default', { month: 'short', day: 'numeric' }),
+            start: localDateStr(start),
+            end:   localDateStr(end),
         });
     }
 
@@ -216,11 +228,10 @@ function buildActivityBar(heatmapData, heatmapUsers) {
         label: user,
         data: weeks.map(week => {
             let total = 0;
-            const start = new Date(week.start);
-            for (let d = 0; d <= 6; d++) {
-                const day = new Date(start);
-                day.setDate(start.getDate() + d);
-                const key = day.toISOString().split('T')[0];
+            const start = new Date(week.start + 'T00:00:00'); // local midnight
+            const end   = new Date(week.end   + 'T00:00:00');
+            for (let cur = new Date(start); cur <= end; cur.setDate(cur.getDate() + 1)) {
+                const key = localDateStr(cur); // local date, matches backend YYYY-MM-DD
                 total += lookup[`${user}|${key}`] || 0;
             }
             return total;
@@ -378,5 +389,6 @@ chartType     = buildDonut('typeChart', 'typeLegend', FILETYPE_DATA);
 chartActivity = buildActivityBar(HEATMAP_DATA, HEATMAP_USERS);
 chartTopUsers = buildTopUsers(TOP_USERS);
 chartDupDist  = buildDupDist(DUP_DIST);
+
 </script>
 {% endblock %}
