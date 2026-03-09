@@ -265,18 +265,21 @@ def exit_user_view(request: Request):
     return RedirectResponse("/dashboard", status_code=302)
 
 
+USERS_PER_PAGE = 10
+
 @router.get("/panel", response_class=HTMLResponse)
 def admin_panel(
     request: Request,
+    page: int = 1,
     db: Session = Depends(get_db),
     admin: dict = Depends(require_admin)
 ):
-    users = db.query(
+    all_users = db.query(
         User,
         func.count(Dataset.id).label('dataset_count')
     ).outerjoin(Dataset).group_by(User.id).order_by(User.created_at.desc()).all()
 
-    users_data = [
+    all_users_data = [
         {
             "id": u.id,
             "username": u.username,
@@ -288,15 +291,31 @@ def admin_panel(
             "last_login": u.last_login,
             "dataset_count": count
         }
-        for u, count in users
+        for u, count in all_users
     ]
 
+    # Stats across ALL users (not just current page)
+    total_users  = len(all_users_data)
+    active_users = sum(1 for u in all_users_data if u["is_active"])
+    admin_users  = sum(1 for u in all_users_data if u["role"] == "admin")
+
+    # Pagination
+    total_pages = max(1, (total_users + USERS_PER_PAGE - 1) // USERS_PER_PAGE)
+    page        = max(1, min(page, total_pages))
+    start       = (page - 1) * USERS_PER_PAGE
+    users_page  = all_users_data[start: start + USERS_PER_PAGE]
+
     return templates.TemplateResponse("admin_panel.html", {
-        "request": request,
-        "user": admin,
-        "users": users_data,
-        "show_header": True,
-        "active_page": "admin"
+        "request":      request,
+        "user":         admin,
+        "users":        users_page,
+        "total_users":  total_users,
+        "active_users": active_users,
+        "admin_users":  admin_users,
+        "page":         page,
+        "total_pages":  total_pages,
+        "show_header":  True,
+        "active_page":  "admin"
     })
 
 
@@ -341,9 +360,10 @@ def delete_user(user_id: int, request: Request, db: Session = Depends(get_db), a
     if not user:
         return JSONResponse(status_code=404, content={"success": False, "error": "User not found"})
     try:
-        user.is_active = False
+        username = user.username
+        db.delete(user)
         db.commit()
-        return JSONResponse(status_code=200, content={"success": True, "message": f"User '{user.username}' deactivated"})
+        return JSONResponse(status_code=200, content={"success": True, "message": f"User '{username}' permanently deleted"})
     except Exception as e:
         db.rollback()
         return JSONResponse(status_code=500, content={"success": False, "error": str(e)})

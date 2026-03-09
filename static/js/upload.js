@@ -262,65 +262,22 @@ autoDetectCategory(file.name);
     // ================= CSV PREVIEW =================
     function loadCSVPreview(file) {
         console.log("Loading CSV preview");
-        
         const reader = new FileReader();
-        
         reader.onload = function(e) {
             try {
-                const text = e.target.result;
-                const lines = text.split('\n').filter(line => line.trim());
-                
-                if (lines.length === 0) {
-                    console.log("Empty file");
-                    return;
-                }
-                
-                // Parse first 6 lines (header + 5 rows)
-                const rows = lines.slice(0, 6).map(line => {
-                    return line.split(',').map(cell => cell.trim().replace(/^"|"$/g, ''));
-                });
-                
-                if (rows.length > 0 && previewTable) {
-                    const headers = rows[0];
-                    const dataRows = rows.slice(1);
-                    checkMissingColumnsFromArray(headers.map(h => h.toLowerCase()));
-
-                    let html = '<thead><tr>';
-                    headers.forEach(header => {
-                        html += `<th>${header || '(empty)'}</th>`;
-                    });
-                    html += '</tr></thead><tbody>';
-                    
-                    dataRows.forEach(row => {
-                        html += '<tr>';
-                        row.forEach(cell => {
-                            html += `<td>${cell || '-'}</td>`;
-                        });
-                        html += '</tr>';
-                    });
-                    html += '</tbody>';
-                    
-                    previewTable.innerHTML = html;
-                    
-                    if (previewSection) {
-                        previewSection.classList.remove('hidden');
-                    }
-                    
-                    if (previewCount) {
-                        previewCount.textContent = `First ${dataRows.length} rows`;
-                    }
-                    
-                    console.log("Preview loaded successfully");
-                }
-            } catch (error) {
-                console.error("Preview error:", error);
+                // Use XLSX to parse CSV — handles quoted commas, \r\n, encoding
+                const workbook = XLSX.read(e.target.result, { type: 'string' });
+                const sheet = workbook.Sheets[workbook.SheetNames[0]];
+                const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' });
+                if (!rows || rows.length === 0) { console.log("Empty CSV"); return; }
+                // Always show preview — no keyword gating
+                renderPreview(rows, previewTable, previewSection, previewCount);
+                console.log("CSV preview loaded");
+            } catch (err) {
+                console.error("CSV preview error:", err);
             }
         };
-        
-        reader.onerror = function() {
-            console.error("Failed to read file");
-        };
-        
+        reader.onerror = function() { console.error("Failed to read CSV"); };
         reader.readAsText(file);
     }
 
@@ -666,175 +623,51 @@ autoDetectCategory(file.name);
 });
 
 function loadExcelPreview(file) {
-
     const reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            const data = new Uint8Array(e.target.result);
+            const workbook = XLSX.read(data, { type: 'array' });
+            const sheet = workbook.Sheets[workbook.SheetNames[0]];
+            const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' });
 
-    reader.onload = function (e) {
+            if (!rows || rows.length === 0) {
+                showToast("Empty Excel file", "error");
+                return;
+            }
 
-        const data = new Uint8Array(e.target.result);
-        const workbook = XLSX.read(data, { type: 'array' });
-
-        const sheetName = workbook.SheetNames[0];
-        const sheet = workbook.Sheets[sheetName];
-
-        // Convert sheet to array
-        const rows = XLSX.utils.sheet_to_json(sheet, { header: 1 });
-
-        if (!rows || rows.length === 0) {
-            showToast("Empty Excel file", "error");
-            return;
-        }
-
-        // First row = header
-        const headers = rows[0].map(h =>
-            String(h || "").toLowerCase().trim()
-        );
-
-        console.log("Excel Headers:", headers);
-
-        // Check headers
-        const valid = checkExcelHeaders(headers);
-
-        // Show preview
-        renderExcelPreview(rows);
-
-        // If invalid → block upload
-        if (!valid) {
-            selectedFile = null;
-            uploadBtn.disabled = true;
+            // Always show preview — no keyword gating
+            renderPreview(rows, previewTable, previewSection, previewCount);
+        } catch (err) {
+            console.error("Excel preview error:", err);
         }
     };
-
+    reader.onerror = function() { console.error("Failed to read Excel file"); };
     reader.readAsArrayBuffer(file);
 }
 
-function renderExcelPreview(rows) {
+function renderPreview(rows, table, section, countEl) {
+    if (!table) return;
 
-    previewTable.innerHTML = "";
+    const headers = rows[0].map(h => String(h !== undefined ? h : '').trim());
+    const previewRows = rows.slice(1, 6);
 
-    const maxRows = Math.min(6, rows.length);
-
-    for (let i = 0; i < maxRows; i++) {
-
-        const tr = document.createElement("tr");
-
-        rows[i].forEach(cell => {
-
-            const el = document.createElement(i === 0 ? "th" : "td");
-            el.textContent = cell || "";
-            tr.appendChild(el);
-
-        });
-
-        previewTable.appendChild(tr);
-    }
-
-    showPreview(maxRows - 1);
-}
-function checkMissingColumnsFromArray(headers) {
-
-    // Common valid header words
-    const validKeywords = [
-        "name", "email", "phone", "mobile",
-        "address", "city", "state", "pin",
-        "zip", "company", "id"
-    ];
-
-    let matchCount = 0;
-
-    headers.forEach(h => {
-        validKeywords.forEach(k => {
-            if (h.includes(k)) {
-                matchCount++;
-            }
-        });
+    let html = '<thead><tr>';
+    headers.forEach(h => { html += `<th>${h || '(empty)'}</th>`; });
+    html += '</tr></thead><tbody>';
+    previewRows.forEach(row => {
+        html += '<tr>';
+        for (let i = 0; i < headers.length; i++) {
+            const val = row[i];
+            html += `<td>${val !== undefined && val !== '' ? val : '-'}</td>`;
+        }
+        html += '</tr>';
     });
+    html += '</tbody>';
+    table.innerHTML = html;
 
-    console.log("Header match count:", matchCount);
-
-    // If too few matches → probably not headers
-    if (matchCount < 2) {
-        console.log("❌ No real headers found");
-        showCorrectionPage(headers);
-        return;
-    }
-
-    console.log("✅ Valid headers detected");
-}
-
-function showCorrectionPage(headers) {
-
-    console.log("Showing correction page");
-
-    // Hide preview + buttons
-    if (previewSection) previewSection.classList.add("hidden");
-    if (actionBar) actionBar.classList.add("hidden");
-
-    if (!missingColumns || !missingInputs) return;
-
-    missingInputs.innerHTML = "";
-
-    headers.forEach(h => {
-
-        const div = document.createElement("div");
-
-        div.className = "form-field";
-
-        div.innerHTML = `
-            <label class="field-label">Rename column</label>
-            <input 
-                type="text" 
-                value="${h}" 
-                class="field-input" 
-                required
-            />
-        `;
-
-        missingInputs.appendChild(div);
-    });
-
-    missingColumns.classList.remove("hidden");
-
-    // Block upload
-    if (uploadBtn) uploadBtn.disabled = true;
-}
-
-
-function checkExcelHeaders(headers) {
-
-    const validKeywords = [
-        "name", "email", "phone", "mobile",
-        "address", "city", "state", "pin",
-        "zip", "company", "id"
-    ];
-
-    let match = 0;
-
-    headers.forEach(h => {
-        validKeywords.forEach(k => {
-            if (h.includes(k)) {
-                match++;
-            }
-        });
-    });
-
-    console.log("Excel header matches:", match);
-
-    // Fake header
-    if (match < 2) {
-
-        console.log("❌ Fake header detected");
-
-        showCorrectionPage(headers);
-
-        showToast("Column headers not detected. Please correct them.", "error");
-
-        return false;
-    }
-
-    console.log("✅ Valid headers");
-
-    return true;
+    if (section) section.classList.remove('hidden');
+    if (countEl) countEl.textContent = `First ${previewRows.length} rows`;
 }
 
 function openNewCategoryModal() {

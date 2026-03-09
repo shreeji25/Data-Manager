@@ -274,8 +274,116 @@
                 {% endfor %}
             </tbody>
         </table>
+
+        {% if total_pages > 1 %}
+        <div class="pagination">
+            
+            <div class="pagination-controls">
+                {% if page > 1 %}
+                <a href="?page={{ page - 1 }}" class="page-btn page-nav">‹ Previous</a>
+                {% else %}
+                <span class="page-btn page-nav disabled">‹ Previous</span>
+                {% endif %}
+
+                {% for p in range(1, total_pages + 1) %}
+                    {% if p == page %}
+                        <span class="page-btn active">{{ p }}</span>
+                    {% elif p == 1 or p == total_pages or (p >= page - 2 and p <= page + 2) %}
+                        <a href="?page={{ p }}" class="page-btn">{{ p }}</a>
+                    {% elif p == page - 3 or p == page + 3 %}
+                        <span class="page-btn dots">…</span>
+                    {% endif %}
+                {% endfor %}
+
+                {% if page < total_pages %}
+                <a href="?page={{ page + 1 }}" class="page-btn page-nav">Next ›</a>
+                {% else %}
+                <span class="page-btn page-nav disabled">Next ›</span>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+
     </div>
 </div>
+
+<style>
+/* ── Pagination — copied exactly from view.css ── */
+.pagination {
+    flex-shrink: 0 !important;
+    flex-grow: 0 !important;
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    padding: 10px 0 12px 0 !important;
+    margin: 0 !important;
+    background: transparent !important;
+    position: relative !important;
+    z-index: 15 !important;
+}
+.pagination-controls {
+    display: flex !important;
+    align-items: center !important;
+    gap: 4px !important;
+    flex-wrap: wrap !important;
+    justify-content: center !important;
+}
+.page-btn {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    min-width: 36px !important;
+    height: 36px !important;
+    padding: 0 10px !important;
+    border: 1.5px solid #e0e7ff !important;
+    border-radius: 8px !important;
+    background: #fff !important;
+    color: #374151 !important;
+    font-size: 14px !important;
+    font-weight: 500 !important;
+    text-decoration: none !important;
+    transition: all 0.15s !important;
+    cursor: pointer !important;
+    box-sizing: border-box !important;
+}
+.page-btn:hover:not(.disabled):not(.dots) {
+    background: #eef2ff !important;
+    border-color: #a5b4fc !important;
+    color: #4f46e5 !important;
+}
+.page-btn.active {
+    background: #4f46e5 !important;
+    border-color: #4f46e5 !important;
+    color: #fff !important;
+    font-weight: 700 !important;
+    box-shadow: 0 2px 8px rgba(79,70,229,0.18) !important;
+}
+.page-btn.dots {
+    border-color: transparent !important;
+    background: transparent !important;
+    cursor: default !important;
+    letter-spacing: 2px !important;
+    color: #9ca3af !important;
+}
+.page-btn.page-nav {
+    padding: 0 14px !important;
+    font-size: 13px !important;
+    color: #4f46e5 !important;
+    border-color: #c7d2fe !important;
+}
+.page-btn.page-nav:hover:not(.disabled) {
+    background: #4f46e5 !important;
+    color: #fff !important;
+    border-color: #4f46e5 !important;
+}
+.page-btn.disabled {
+    color: #c4c4c4 !important;
+    border-color: #e5e7eb !important;
+    background: #fafafa !important;
+    cursor: not-allowed !important;
+    pointer-events: none !important;
+}
+</style>
 
 <!-- Create User Modal -->
 <div class="modal" id="createUserModal">
