@@ -252,7 +252,7 @@ async def upload_file(
         else:
             log_msg = f"Headers valid. Detected: {', '.join(detected_mapping.keys())}"
 
-        log = UploadLog(file_name=file.filename, status="analyzing", message=log_msg)
+        log = UploadLog(file_name=file.filename, status="SUCCESS", message=log_msg)
         db.add(log)
         db.commit()
 
@@ -297,6 +297,7 @@ async def upload_file(
                 "columns": list(df.columns),
                 "preview": preview_data,
                 "category_id": category_id,
+                "show_sidebar": False,
                 "description": description,
                 "original_filename": file.filename,
                 "problem_reason": info["problem_reason"]
