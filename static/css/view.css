@@ -519,17 +519,22 @@ body {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 34px;
-    height: 34px;
+    gap: 6px;
+    padding: 8px 16px;
+    width: auto;
+    height: auto;
     background: #f1f5f9;
     border: 1.5px solid #cbd5e1;
     border-radius: 8px;
     color: #475569;
+    font-size: 13px;
+    font-weight: 600;
     text-decoration: none;
     transition: all 0.2s;
     flex-shrink: 0;
+    white-space: nowrap;
 }
-.btn-back:hover { background: #e2e8f0; color: #1e293b; }
+.btn-back:hover { background: #e2e8f0; border-color: #94a3b8; color: #1e293b; }
 
 /* Header layout adjustments */
 .view-header-left {
@@ -542,6 +547,9 @@ body {
 .view-header-right {
     flex-shrink: 0;
     margin-left: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
 }
 .dataset-title {
     overflow: hidden;
